@@ -9,14 +9,6 @@ const PLAYERS = {
 	two: 'playerTwo',
 };
 
-// console.log(game.getViewForPlayer('playerOne'))
-// console.log('')
-// console.log('PLAYER TWO')
-// console.log(game.getViewForPlayer('playerTwo'))
-
-// console.log(game.giveClueForTurn('playerOne', 'banana', 2));
-// console.log(game.guess(game.getViewForPlayer('playerTwo').assasins[0]));
-
 function getOrCreateGame(hash) {
 	games[hash] = games[hash] || new Game();
 	return games[hash];
@@ -28,7 +20,7 @@ app.get('/', (req, res) => {
 
 app.get('/words', (req, res) => {
 	const gameId = req.query.gameId || DEFAULT_GAME_ID;
-	const game = getOrCreateGame();
+	const game = getOrCreateGame(gameId);
 	const player = PLAYERS[req.query.player];
 	const view = player ? game.getViewForPlayer(player) : game.getWords('playerOne');
 
