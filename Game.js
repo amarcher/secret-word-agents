@@ -191,6 +191,18 @@ Game.prototype.getWordsOfEntityTypeForPlayer = function(entityType, player) {
 	}, this);
 }
 
+Game.prototype.getWords = function(player) {
+	const words = {};
+
+	Object.keys(this.wordMap).forEach(function(word) {
+		words[word] = {
+			roleRevealedForClueGiver: this.wordMap.roleRevealedForClueGiver,
+		};
+	}, this);
+
+	return words;
+}
+
 Game.prototype.getViewForPlayer = function(player) {
 	var assasins = this.getWordsOfEntityTypeForPlayer(ROLES.ASSASIN, player);
 	var agents = this.getWordsOfEntityTypeForPlayer(ROLES.AGENT, player);
