@@ -35,4 +35,4 @@ app.get('/words', (req, res) => {
 	res.send(view);
 });
 
-app.listen(3000, () => console.log('Secret Word Agent running on localhost:3000/words?gameId=blah !!!'));
+app.listen(process.env.PORT || 3000, () => console.log('Secret Word Agent running on localhost:3000/words?gameId=blah !!!'));
