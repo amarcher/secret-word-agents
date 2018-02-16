@@ -3,7 +3,7 @@ const express = require('express');
 const app = express();
 // TODO store games in a hash -- reference them by id (maybe we don't need a DB?)
 const games = {};
-const DEFAULT_GAME_ID; = 'AAAA';
+const DEFAULT_GAME_ID = 'AAAA';
 const PLAYERS = {
 	one: 'playerOne',
 	two: 'playerTwo',
