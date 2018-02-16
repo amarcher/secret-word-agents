@@ -1,4 +1,4 @@
-var COUNTS = {
+const COUNTS = {
 	WORDS: 25,
 	AGENTS: 15,
 	AGENTS_PER_PLAYER: 9,
@@ -7,7 +7,7 @@ var COUNTS = {
 	TURNS: 9,
 };
 
-var ROLES = {
+const ROLES = {
 	ASSASIN: 'ASSASIN',
 	AGENT: 'AGENT',
 	NON_AGENT: 'NON_AGENT',
@@ -15,7 +15,7 @@ var ROLES = {
 
 COUNTS.OVERLAPPING_AGENTS = COUNTS.PLAYERS * COUNTS.AGENTS_PER_PLAYER - COUNTS.AGENTS;
 
-var WORDS = [
+const WORDS = [
 	'battleship',
 	'bee',
 	'honey',
@@ -54,7 +54,12 @@ var WORDS = [
 ];
 
 function shuffle(array) {
-	return array.sort(function() { return Math.random() });
+	for (let i = array.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[array[i], array[j]] = [array[j], array[i]];
+        }
+
+        return array;
 }
 
 function getRandomizedWords() {
@@ -62,19 +67,19 @@ function getRandomizedWords() {
 }
 
 function getGameboard() {
-	var overlappingAgents = [];
-	var playerOneAgents = [];
-	var playerTwoAgents = [];
-	var nonAgents = [];
+	const overlappingAgents = [];
+	const playerOneAgents = [];
+	const playerTwoAgents = [];
+	const nonAgents = [];
 
-	for (var i = 0; i < COUNTS.OVERLAPPING_AGENTS; i++) {
+	for (let i = 0; i < COUNTS.OVERLAPPING_AGENTS; i++) {
 		overlappingAgents.push({
 			playerOne: ROLES.AGENT,
 			playerTwo: ROLES.AGENT,
 		});
 	}
 
-	for (var j = 0; j < (COUNTS.AGENTS_PER_PLAYER - COUNTS.OVERLAPPING_AGENTS); j++) {
+	for (let j = 0; j < (COUNTS.AGENTS_PER_PLAYER - COUNTS.OVERLAPPING_AGENTS); j++) {
 		playerOneAgents.push({
 			playerOne: ROLES.AGENT,
 		});
@@ -84,13 +89,13 @@ function getGameboard() {
 		});
 	}
 
-	for (var k = 0; k < (COUNTS.WORDS - COUNTS.AGENTS); k++) {
+	for (let k = 0; k < (COUNTS.WORDS - COUNTS.AGENTS); k++) {
 		nonAgents.push({});
 	}
 
-	var playerOneAssasins = 0;
-	var playerTwoAssasins = 0;
-	var gameboard = shuffle(overlappingAgents.concat(nonAgents, playerOneAgents, playerTwoAgents));
+	let playerOneAssasins = 0;
+	let playerTwoAssasins = 0;
+	let gameboard = shuffle(overlappingAgents.concat(nonAgents, playerOneAgents, playerTwoAgents));
 	gameboard.forEach(function(square) {
 		if (!square.playerOne) {
 			if (playerOneAssasins < COUNTS.ASSASINS_PER_PLAYER) {
@@ -117,10 +122,10 @@ function getGameboard() {
 }
 
 function getWordMap() {
-	var words = getRandomizedWords();
-	var gameboard = getGameboard();
+	const words = getRandomizedWords();
+	const gameboard = getGameboard();
 
-	var wordMap = {};
+	const wordMap = {};
 
 	words.forEach(function(word, index) {
 		wordMap[word] = Object.assign({}, gameboard[index], { roleRevealedForClueGiver: {} });
@@ -150,9 +155,9 @@ Game.prototype.giveClueForTurn = function(playerGivingClue, clueWord, guessesLef
 }
 
 Game.prototype.guess = function(word) {
-	var square = this.wordMap[word];
-	var player = this.currentTurn && this.currentTurn.playerGivingClue;
-	var role = square[player];
+	const square = this.wordMap[word];
+	const player = this.currentTurn && this.currentTurn.playerGivingClue;
+	const role = square[player];
 
 	if (!player) {
 		throw new Error('No one has given a clue yet.');
@@ -204,9 +209,9 @@ Game.prototype.getWords = function(player) {
 }
 
 Game.prototype.getViewForPlayer = function(player) {
-	var assasins = this.getWordsOfEntityTypeForPlayer(ROLES.ASSASIN, player);
-	var agents = this.getWordsOfEntityTypeForPlayer(ROLES.AGENT, player);
-	var nonAgents = this.getWordsOfEntityTypeForPlayer(ROLES.NON_AGENT, player);
+	const assasins = this.getWordsOfEntityTypeForPlayer(ROLES.ASSASIN, player);
+	const agents = this.getWordsOfEntityTypeForPlayer(ROLES.AGENT, player);
+	const nonAgents = this.getWordsOfEntityTypeForPlayer(ROLES.NON_AGENT, player);
 
 	return {
 		agents: agents,
