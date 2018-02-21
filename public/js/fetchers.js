@@ -1,5 +1,5 @@
-import { get } from './utils/ajax';
+import { post } from './utils/ajax';
 
-export function fetchGame({ key } = {}) {
-	return get(`/words?gameId=${key}`);
+export function fetchGame({ gameId } = {}) {
+	return post('/words', { gameId });
 }

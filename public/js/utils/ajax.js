@@ -1,5 +1,3 @@
-
-
 import 'whatwg-fetch';
 
 function stringify(params) {

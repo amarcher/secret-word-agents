@@ -25,17 +25,21 @@ function getOrCreateGame(hash) {
 	return games[hash];
 }
 
-app.get('/words', (req, res) => {
-	const gameId = req.query.gameId || DEFAULT_GAME_ID;
+app.post('/words', (req, res) => {
+	const gameId = req.body.gameId || DEFAULT_GAME_ID;
 	const game = getOrCreateGame(gameId);
-	const player = PLAYERS[req.query.player];
+	const player = PLAYERS[req.body.player];
 	const view = player ? game.getViewForPlayer(player) : game.getWords();
 
-	res.send(view);
+	res.send({
+		gameId,
+		words: view,
+	});
 });
 
 app.all('*', (req, res) => {
 	res.render('layout');
 });
 
-app.listen(process.env.PORT || 3000, () => console.log('Secret Word Agent running on localhost:3000/words?gameId=blah !!!'));
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`Secret Word Agent running on ${port}!`));

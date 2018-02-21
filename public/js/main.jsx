@@ -1,10 +1,11 @@
 import React from 'react';
 import { render } from 'react-dom';
 import { Provider } from 'react-redux';
-import { Route } from 'react-router';
+import { Route, Switch } from 'react-router';
 import { ConnectedRouter } from 'react-router-redux';
 
 import EnterGame from './components/enter-game';
+import GameView from './components/game-view';
 import NoResults from './components/no-results';
 
 import { store, history } from './stores';
@@ -15,10 +16,11 @@ function registerApp() {
 		(
 			<Provider store={store}>
 				<ConnectedRouter history={history}>
-					<div>
-						<Route path="/" component={EnterGame} />
-						<Route path="*" component={NoResults} />
-					</div>
+					<Switch>
+						<Route path="/" exact component={EnterGame} />
+						<Route path="/:gameId" component={GameView} />
+						<Route component={NoResults} />
+					</Switch>
 				</ConnectedRouter>
 			</Provider>
 		), window.document.getElementsByClassName('app')[0],
