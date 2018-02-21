@@ -1,0 +1,84 @@
+/** BASE STYLES **/
+
+body {
+	background-color: black;
+}
+
+* {
+	color: white;
+	font-family: BlinkMacSystemFontuser;
+}
+
+div {
+	line-height: 36px;
+	font-size: 24px;
+}
+
+input, button {
+    box-sizing: border-box;
+	background-color: #2f2f2f;
+	border: none;
+	line-height: 36px;
+	font-size: 24px;
+	padding: 0 12px;
+}
+
+button {
+	border-radius: 28px;
+	display: inline-block;
+	cursor: pointer;
+	font-size: 24px;
+}
+
+button:hover {
+	background-color: #5cbf2a;
+}
+
+button:active {
+	position:relative;
+	top:1px;
+}
+
+button:focus,
+input:focus {
+	outline: 0;
+}
+
+/** GRID **/
+
+.row {
+	display: flex;
+	margin: 12px 0;
+}
+
+.col {
+	flex: 1;
+	margin: 0 12px;
+}
+
+.col-4 {
+	flex-basis: 33.3333333%;
+}
+
+/** HELPER CLASSES **/
+
+.text-center {
+	text-align: center;
+}
+
+.text-large {
+	font-size: 24px;
+}
+
+.stretched {
+	margin-left: 0;
+	margin-right: 0;
+}
+
+.pull-left {
+	float: left;
+}
+
+.pull-right {
+	float: right;
+}

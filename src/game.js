@@ -11,7 +11,7 @@ const ROLES = {
 	ASSASIN: 'ASSASIN',
 	AGENT: 'AGENT',
 	NON_AGENT: 'NON_AGENT',
-}
+};
 
 COUNTS.OVERLAPPING_AGENTS = COUNTS.PLAYERS * COUNTS.AGENTS_PER_PLAYER - COUNTS.AGENTS;
 
@@ -50,16 +50,16 @@ const WORDS = [
 	'toilet',
 	'nuclear',
 	'dynomite',
-	'popcorn'
+	'popcorn',
 ];
 
 function shuffle(array) {
 	for (let i = array.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));
 		[array[i], array[j]] = [array[j], array[i]];
-        }
+	}
 
-        return array;
+	return array;
 }
 
 function getRandomizedWords() {
@@ -96,7 +96,7 @@ function getGameboard() {
 	let playerOneAssasins = 0;
 	let playerTwoAssasins = 0;
 	let gameboard = shuffle(overlappingAgents.concat(nonAgents, playerOneAgents, playerTwoAgents));
-	gameboard.forEach(function(square) {
+	gameboard.forEach((square) => {
 		if (!square.playerOne) {
 			if (playerOneAssasins < COUNTS.ASSASINS_PER_PLAYER) {
 				square.playerOne = ROLES.ASSASIN;
@@ -107,7 +107,7 @@ function getGameboard() {
 		}
 	});
 	gameboard = shuffle(gameboard);
-	gameboard.forEach(function(square) {
+	gameboard.forEach((square) => {
 		if (!square.playerTwo) {
 			if (playerTwoAssasins < COUNTS.ASSASINS_PER_PLAYER) {
 				square.playerTwo = ROLES.ASSASIN;
@@ -127,7 +127,7 @@ function getWordMap() {
 
 	const wordMap = {};
 
-	words.forEach(function(word, index) {
+	words.forEach((word, index) => {
 		wordMap[word] = Object.assign({}, gameboard[index], { roleRevealedForClueGiver: {} });
 	});
 
@@ -140,21 +140,21 @@ function Game() {
 	this.turnsLeft = COUNTS.TURNS;
 }
 
-Game.prototype.giveClueForTurn = function(playerGivingClue, clueWord, guessesLeft) {
+Game.prototype.giveClueForTurn = function (playerGivingClue, clueWord, guessesLeft) {
 	if (this.currentTurn && this.currentTurn.guessesLeft > 0) {
-		throw new Error('There are still ' + this.currentTurn.guessesLeft + 'guesses left in the current turn');
+		throw new Error(`There are still ${this.currentTurn.guessesLeft}guesses left in the current turn`);
 	}
 
 	this.currentTurn = {
-		playerGivingClue: playerGivingClue,
-		guessesLeft: guessesLeft,
-		clueWord: clueWord,
+		playerGivingClue,
+		guessesLeft,
+		clueWord,
 	};
 
 	return this.currentTurn;
-}
+};
 
-Game.prototype.guess = function(word) {
+Game.prototype.guess = function (word) {
 	const square = this.wordMap[word];
 	const player = this.currentTurn && this.currentTurn.playerGivingClue;
 	const role = square[player];
@@ -164,11 +164,11 @@ Game.prototype.guess = function(word) {
 	}
 
 	if (!square) {
-		throw new Error('The word "' + word + '"" is not on the board.');
+		throw new Error(`The word "${word}"" is not on the board.`);
 	}
 
 	if (square.roleRevealedForClueGiver[player]) {
-		throw new Error('The word "' + word + '" was already revealed to be: ' + role + ' for this clue-giver.');
+		throw new Error(`The word "${word}" was already revealed to be: ${role} for this clue-giver.`);
 	}
 
 	square.roleRevealedForClueGiver[player] = role;
@@ -184,40 +184,40 @@ Game.prototype.guess = function(word) {
 	}
 
 	return {
-		word: word,
+		word,
 		roleRevealedForClueGiver: square.roleRevealedForClueGiver,
 		guessesLeft: this.currentTurn.guessesLeft,
 	};
-}
+};
 
-Game.prototype.getWordsOfEntityTypeForPlayer = function(entityType, player) {
-	return Object.keys(this.wordMap).filter(function(word) {
+Game.prototype.getWordsOfEntityTypeForPlayer = function (entityType, player) {
+	return Object.keys(this.wordMap).filter(function (word) {
 		return this.wordMap[word][player] === entityType;
 	}, this);
-}
+};
 
-Game.prototype.getWords = function(player) {
+Game.prototype.getWords = function (player) {
 	const words = {};
 
-	Object.keys(this.wordMap).forEach(function(word) {
+	Object.keys(this.wordMap).forEach(function (word) {
 		words[word] = {
 			roleRevealedForClueGiver: this.wordMap.roleRevealedForClueGiver,
 		};
 	}, this);
 
 	return words;
-}
+};
 
-Game.prototype.getViewForPlayer = function(player) {
+Game.prototype.getViewForPlayer = function (player) {
 	const assasins = this.getWordsOfEntityTypeForPlayer(ROLES.ASSASIN, player);
 	const agents = this.getWordsOfEntityTypeForPlayer(ROLES.AGENT, player);
 	const nonAgents = this.getWordsOfEntityTypeForPlayer(ROLES.NON_AGENT, player);
 
 	return {
-		agents: agents,
-		nonAgents: nonAgents,
-		assasins: assasins,
+		agents,
+		nonAgents,
+		assasins,
 	};
-}
+};
 
 module.exports = Game;

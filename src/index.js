@@ -1,7 +1,13 @@
 const Game = require('./game');
 const express = require('express');
+const bodyParser = require('body-parser');
+
 const app = express();
-// TODO store games in a hash -- reference them by id (maybe we don't need a DB?)
+app.set('view engine', 'ejs');
+app.use(express.static('public'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
 const games = {};
 const DEFAULT_GAME_ID = 'AAAA';
 const PLAYERS = {
@@ -19,10 +25,6 @@ function getOrCreateGame(hash) {
 	return games[hash];
 }
 
-app.get('/', (req, res) => {
-	res.send('Secret Agent Words!');
-});
-
 app.get('/words', (req, res) => {
 	const gameId = req.query.gameId || DEFAULT_GAME_ID;
 	const game = getOrCreateGame(gameId);
@@ -30,6 +32,10 @@ app.get('/words', (req, res) => {
 	const view = player ? game.getViewForPlayer(player) : game.getWords();
 
 	res.send(view);
+});
+
+app.all('*', (req, res) => {
+	res.render('layout');
 });
 
 app.listen(process.env.PORT || 3000, () => console.log('Secret Word Agent running on localhost:3000/words?gameId=blah !!!'));

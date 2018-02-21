@@ -6,6 +6,9 @@
 
 ### Running locally
 
-```js
+```bash
+npm install
 npm start
 ```
+
+Then visit localhost:3000/
