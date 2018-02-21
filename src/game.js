@@ -138,6 +138,9 @@ function Game() {
 	this.wordMap = getWordMap();
 	this.agentsLeft = COUNTS.AGENTS;
 	this.turnsLeft = COUNTS.TURNS;
+
+	// TODO: remove
+	this.giveClueForTurn('playerOne', 'infinity', COUNTS.WORDS);
 }
 
 Game.prototype.giveClueForTurn = function (playerGivingClue, clueWord, guessesLeft) {
@@ -184,7 +187,7 @@ Game.prototype.guess = function (word) {
 	}
 
 	return {
-		word,
+		word: word,
 		roleRevealedForClueGiver: square.roleRevealedForClueGiver,
 		guessesLeft: this.currentTurn.guessesLeft,
 	};
@@ -201,7 +204,7 @@ Game.prototype.getWords = function (player) {
 
 	Object.keys(this.wordMap).forEach(function (word) {
 		words[word] = {
-			roleRevealedForClueGiver: this.wordMap.roleRevealedForClueGiver,
+			roleRevealedForClueGiver: this.wordMap[word].roleRevealedForClueGiver,
 		};
 	}, this);
 

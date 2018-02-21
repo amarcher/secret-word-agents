@@ -1,0 +1,48 @@
+.words {
+	display: grid;
+	grid-template-columns: repeat(5, auto);
+	grid-template-rows: repeat(5, auto);
+	grid-auto-flow: column;
+	grid-column-gap: 10px;
+	grid-row-gap: 10px;
+
+	max-width: 90%;
+	margin: 100px auto;
+}
+
+.word {
+	border-radius: 5px;
+	padding: 20px;
+	font-size: 24px;
+	background-color: #1e1e1e;
+	min-height: 60px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	user-select: none;
+	cursor: pointer;
+}
+
+.word.agent {
+	background-color: #029192;
+	cursor: auto;
+}
+
+.word.non-agent-player-one {
+	background: linear-gradient(to right, #721932, #1e1e1e);
+}
+
+.word.non-agent-player-two {
+	background: linear-gradient(to right, #1e1e1e, #721932);
+}
+
+.word.non-agent-player-one.non-agent-player-two {
+	background-color: #721932;
+	cursor: auto;
+}
+
+.word.assasin {
+	background-color: #fff;
+	color: black;
+	cursor: auto;
+}

@@ -37,6 +37,21 @@ app.post('/words', (req, res) => {
 	});
 });
 
+app.post('/guess', (req, res) => {
+	const gameId = req.body.gameId || DEFAULT_GAME_ID;
+	const word = req.body.word;
+	const game = getOrCreateGame(gameId);
+	const guess = game.guess(word);
+
+	res.send({
+		gameId,
+		word: guess.word,
+		roleRevealedForClueGiver: guess.roleRevealedForClueGiver,
+		guessesLeft: guess.guessesLeft
+	});
+});
+
+
 app.all('*', (req, res) => {
 	res.render('layout');
 });

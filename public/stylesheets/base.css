@@ -9,11 +9,6 @@ body {
 	font-family: BlinkMacSystemFontuser;
 }
 
-div {
-	line-height: 36px;
-	font-size: 24px;
-}
-
 input, button {
     box-sizing: border-box;
 	background-color: #2f2f2f;

@@ -31,7 +31,7 @@ export class BaseGameView extends Component {
 		const { game } = this.props;
 
 		return Object.keys(game.words).map(word => (
-			<Word word={word} revealed={game.words[word]} key={word} />
+			<Word word={word} revealed={game.words[word].roleRevealedForClueGiver} key={word} />
 		));
 	}
 
@@ -41,7 +41,7 @@ export class BaseGameView extends Component {
 		}
 
 		return (
-			<div>
+			<div className="words">
 				{this.renderWords()}
 			</div>
 		);
