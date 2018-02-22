@@ -3,7 +3,7 @@ import { routerReducer, routerMiddleware } from 'react-router-redux';
 import thunkMiddleware from 'redux-thunk';
 import createHistory from 'history/createBrowserHistory';
 
-import gameReducer from './game-store';
+import gameReducer, { updateWordInGame } from './game-store';
 
 export const history = createHistory();
 const middleware = routerMiddleware(history);
@@ -15,5 +15,13 @@ export const store = createStore(
 	}),
 	applyMiddleware(thunkMiddleware, middleware),
 );
+
+export function wsEvent(data) {
+	const { type, payload } = data;
+
+	if (type === 'guess') {
+		store.dispatch(updateWordInGame(payload));
+	}
+}
 
 export default store;

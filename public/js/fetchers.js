@@ -1,6 +1,9 @@
 import { post } from './utils/ajax';
+import { start } from './utils/ws';
 
 export function fetchGame({ gameId } = {}) {
+	start(gameId);
+
 	return post('/words', { gameId });
 }
 
