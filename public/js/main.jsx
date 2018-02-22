@@ -8,7 +8,6 @@ import EnterGame from './components/enter-game';
 import GameView from './components/game-view';
 import NoResults from './components/no-results';
 
-import { start } from './utils/ws';
 import { store, history } from './stores';
 
 
@@ -29,6 +28,5 @@ function registerApp() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-	start();
 	registerApp();
 });

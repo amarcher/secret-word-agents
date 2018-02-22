@@ -2,7 +2,7 @@ import { createAction, createReducer } from 'redux-act';
 import { fetchGame, guess } from '../fetchers';
 
 const addOrReplaceGame = createAction('Add or replace game');
-const updateWordInGame = createAction('Update roleRevealedForClueGiver for a word in a game');
+export const updateWordInGame = createAction('Update roleRevealedForClueGiver for a word in a game');
 
 const reducer = createReducer({
 	[addOrReplaceGame]: (state, game) => {

@@ -12,14 +12,55 @@ app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// START SERVER
+
 const server = http.createServer(app);
-server.listen(port);
-
 const wss = new WebSocketServer({ server: server });
+server.listen(port, function() {
+	console.log('Server with web socket capabilities listening on port ' + port);
+});
 
-console.log('Server with web socket capabilities listening on port ' + port);
+// HANDLE INCOMING CONNECTIONS
+
+wss.on('connection', function(ws) {
+ 	console.log('new websocket connection open');
+
+ 	// TODO: Remove this counting
+ 	let count = 0;
+ 	wss.clients.forEach(function(client, index) { count++ });
+ 	console.log('we now have this many clients: ', count);
+
+ 	ws.on('message', function(data) {
+ 		// TODO do something with incoming messages
+	 	console.log('websocket message', JSON.parse(data));
+ 	});
+
+ 	ws.on('close', function(info) {
+ 		// TODO do something with incoming messages
+		console.log('websocket connection close')
+ 	});
+
+ 	ws.on('error', function(info) {
+ 		// NOTE: Unhandled errors cause the app to crash... So we need this!
+		console.log('websocket error', info.message);
+	});
+})
+
+
+function broadcast(data) {
+	wss.clients.forEach(function(client) {
+		// TODO: Check the gameId for each client before broadcasting
+		if (client.readyState === 1) {
+			client.send(JSON.stringify(data));
+		}
+	});
+};
+
+
+// GAME DATA
 
 const games = {};
+const sockets = {};
 const DEFAULT_GAME_ID = 'AAAA';
 const PLAYERS = {
 	one: 'playerOne',
@@ -35,6 +76,9 @@ function getOrCreateGame(hash) {
 
 	return games[hash];
 }
+
+
+// ROUTES
 
 app.post('/words', (req, res) => {
 	const gameId = req.body.gameId || DEFAULT_GAME_ID;
@@ -54,12 +98,16 @@ app.post('/guess', (req, res) => {
 	const game = getOrCreateGame(gameId);
 	const guess = game.guess(word);
 
-	res.send({
+	const payload = {
 		gameId,
 		word: guess.word,
 		roleRevealedForClueGiver: guess.roleRevealedForClueGiver,
 		guessesLeft: guess.guessesLeft
-	});
+	};
+
+	res.send(payload);
+
+	broadcast({ type: 'guess', payload: payload });
 });
 
 app.all('*', (req, res) => {
