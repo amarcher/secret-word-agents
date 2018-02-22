@@ -26,18 +26,30 @@ wss.on('connection', function(ws) {
  	console.log('new websocket connection open');
 
  	// TODO: Remove this counting
- 	let count = 0;
- 	wss.clients.forEach(function(client, index) { count++ });
- 	console.log('we now have this many clients: ', count);
+ 	console.log('we now have ' + wss.clients.size + ' total clients');
 
  	ws.on('message', function(data) {
- 		// TODO do something with incoming messages
-	 	console.log('websocket message', JSON.parse(data));
+ 		const parsedData = JSON.parse(data);
+	 	console.log('websocket message', parsedData);
+
+ 		const gameId = parsedData.gameId;
+	 	if (gameId) {
+	 		if (ws._gameId && ws._gameId !== gameId && sockets[ws._gameId]) {
+		 		// player has joined a different game, so we boot them from their existing game
+		 		handlePlayerLeft(ws);
+	 		}
+
+	 		if (!sockets[gameId] || !sockets[gameId].has(ws)) {
+		 		handlePlayerJoined(ws, gameId);
+	 		}
+	 	}
  	});
 
  	ws.on('close', function(info) {
- 		// TODO do something with incoming messages
 		console.log('websocket connection close')
+ 		if (ws._gameId && sockets[ws._gameId]) {
+ 			handlePlayerLeft(ws);
+ 		}
  	});
 
  	ws.on('error', function(info) {
@@ -46,14 +58,44 @@ wss.on('connection', function(ws) {
 	});
 })
 
+function handlePlayerLeft(ws) {
+	sockets[ws._gameId].delete(ws);
 
-function broadcast(data) {
-	wss.clients.forEach(function(client) {
-		// TODO: Check the gameId for each client before broadcasting
-		if (client.readyState === 1) {
-			client.send(JSON.stringify(data));
+	broadcast(ws._gameId, {
+		type: 'playerLeft',
+		payload: {
+			count: sockets[ws._gameId].size,
 		}
 	});
+
+	ws._gameId = undefined;
+}
+
+function handlePlayerJoined(ws, gameId) {
+	if (sockets[gameId]) {
+		sockets[gameId].add(ws);
+	} else {
+		sockets[gameId] = new Set([ws]);
+	}
+
+	ws._gameId = gameId;
+
+	broadcast(gameId, {
+		type: 'playerJoined',
+		payload: {
+			count: sockets[gameId].size,
+		}
+	});
+}
+
+function broadcast(gameId, data) {
+	if (sockets[gameId]) {
+		sockets[gameId].forEach(function(client) {
+			if (client.readyState === 1) {
+				client.send(JSON.stringify(data));
+			}
+		});
+	}
 };
 
 
@@ -107,7 +149,7 @@ app.post('/guess', (req, res) => {
 
 	res.send(payload);
 
-	broadcast({ type: 'guess', payload: payload });
+	broadcast(gameId, { type: 'guess', payload: payload });
 });
 
 app.all('*', (req, res) => {

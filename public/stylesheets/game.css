@@ -46,3 +46,9 @@
 	color: black;
 	cursor: auto;
 }
+
+.players {
+	margin: 100px auto;
+	text-align: center;
+	font-size: 36px;
+}
