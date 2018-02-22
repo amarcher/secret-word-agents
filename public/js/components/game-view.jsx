@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
 import Word from './word';
+import PlayerView from './player-view';
 import { enterGame, getGame } from '../stores/game-store';
 
 const propTypes = {
@@ -20,11 +21,9 @@ const defaultProps = {
 
 export class BaseGameView extends Component {
 	componentDidMount() {
-		const { game, gameId } = this.props;
+		const { gameId } = this.props;
 
-		if (!game.gameId || game.gameId !== gameId) {
-			this.props.enterGame({ gameId });
-		}
+		this.props.enterGame({ gameId });
 	}
 
 	renderWords() {
@@ -41,8 +40,11 @@ export class BaseGameView extends Component {
 		}
 
 		return (
-			<div className="words">
-				{this.renderWords()}
+			<div className="container">
+				<div className="words">
+					{this.renderWords()}
+				</div>
+				<PlayerView />
 			</div>
 		);
 	}

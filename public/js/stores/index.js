@@ -4,6 +4,7 @@ import thunkMiddleware from 'redux-thunk';
 import createHistory from 'history/createBrowserHistory';
 
 import gameReducer, { updateWordInGame } from './game-store';
+import playersReducer, { updatePlayerCount } from './players-store';
 
 export const history = createHistory();
 const middleware = routerMiddleware(history);
@@ -11,6 +12,7 @@ const middleware = routerMiddleware(history);
 export const store = createStore(
 	combineReducers({
 		game: gameReducer,
+		players: playersReducer,
 		router: routerReducer,
 	}),
 	applyMiddleware(thunkMiddleware, middleware),
@@ -19,8 +21,14 @@ export const store = createStore(
 export function wsEvent(data) {
 	const { type, payload } = data;
 
-	if (type === 'guess') {
-		store.dispatch(updateWordInGame(payload));
+	switch (type) {
+	case 'guess':
+		return store.dispatch(updateWordInGame(payload));
+	case 'playerLeft':
+	case 'playerJoined':
+		return store.dispatch(updatePlayerCount(payload));
+	default:
+		return null;
 	}
 }
 
