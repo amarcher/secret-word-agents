@@ -5,6 +5,7 @@ import createHistory from 'history/createBrowserHistory';
 
 import gameReducer, { addOrReplaceGame, updateWordInGame } from './game-store';
 import playersReducer, { updatePlayerCount } from './players-store';
+import playerIdReducer, { setPlayerId } from './player-id-store';
 
 export const history = createHistory();
 const middleware = routerMiddleware(history);
@@ -13,6 +14,7 @@ export const store = createStore(
 	combineReducers({
 		game: gameReducer,
 		players: playersReducer,
+		playerId: playerIdReducer,
 		router: routerReducer,
 	}),
 	applyMiddleware(thunkMiddleware, middleware),
@@ -29,6 +31,8 @@ export function wsEvent(data) {
 	case 'playerLeft':
 	case 'playerJoined':
 		return store.dispatch(updatePlayerCount(payload));
+	case 'playerChanged':
+		return store.dispatch(setPlayerId(payload));
 	default:
 		return null;
 	}

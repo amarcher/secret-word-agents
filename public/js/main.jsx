@@ -5,7 +5,7 @@ import { Route, Switch } from 'react-router';
 import { ConnectedRouter } from 'react-router-redux';
 
 import EnterGame from './components/enter-game';
-import GameView from './components/game-view';
+import Container from './components/container';
 import NoResults from './components/no-results';
 
 import { store, history } from './stores';
@@ -18,7 +18,7 @@ function registerApp() {
 				<ConnectedRouter history={history}>
 					<Switch>
 						<Route path="/" exact component={EnterGame} />
-						<Route path="/:gameId" component={GameView} />
+						<Route path="/:gameId" component={Container} />
 						<Route component={NoResults} />
 					</Switch>
 				</ConnectedRouter>

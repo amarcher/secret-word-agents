@@ -1,3 +1,5 @@
+const WORDS = require('./words');
+
 const COUNTS = {
 	WORDS: 25,
 	AGENTS: 15,
@@ -14,44 +16,6 @@ const ROLES = {
 };
 
 COUNTS.OVERLAPPING_AGENTS = COUNTS.PLAYERS * COUNTS.AGENTS_PER_PLAYER - COUNTS.AGENTS;
-
-const WORDS = [
-	'battleship',
-	'bee',
-	'honey',
-	'winter',
-	'key',
-	'celebrate',
-	'waver',
-	'jump',
-	'cactus',
-	'manatee',
-	'poodle',
-	'kitten',
-	'explosion',
-	'trip',
-	'phone',
-	'kuala',
-	'suculent',
-	'computer',
-	'email',
-	'airplane',
-	'fence',
-	'gastropub',
-	'salsa',
-	'guacamole',
-	'fondue',
-	'cheese',
-	'berry',
-	'martini',
-	'moscow',
-	'ruler',
-	'bandaid',
-	'toilet',
-	'nuclear',
-	'dynomite',
-	'popcorn',
-];
 
 function shuffle(array) {
 	for (let i = array.length - 1; i > 0; i--) {
@@ -157,31 +121,36 @@ Game.prototype.giveClueForTurn = function (playerGivingClue, clueWord, guessesLe
 	return this.currentTurn;
 };
 
-Game.prototype.guess = function (word) {
+Game.prototype.guess = function (word, player) {
 	const square = this.wordMap[word];
-	const player = this.currentTurn && this.currentTurn.playerGivingClue;
-	const role = square[player];
+	let playerGivingClue = player === 'one' ? 'playerTwo' : 'playerOne';
 
 	if (!player) {
-		throw new Error('No one has given a clue yet.');
+		console.log('No player provided.');
+		playerGivingClue = this.currentTurn.playerGivingClue;
 	}
+
+	const role = square[playerGivingClue];
+
 
 	if (!square) {
-		throw new Error(`The word "${word}"" is not on the board.`);
+		console.log(`The word "${word}"" is not on the board.`);
+		return;
 	}
 
-	if (square.roleRevealedForClueGiver[player]) {
-		throw new Error(`The word "${word}" was already revealed to be: ${role} for this clue-giver.`);
+	if (square.roleRevealedForClueGiver[playerGivingClue]) {
+		console.log(`The word "${word}" was already revealed to be: ${role} for this clue-giver.`);
+		return;
 	}
 
-	square.roleRevealedForClueGiver[player] = role;
+	square.roleRevealedForClueGiver[playerGivingClue] = role;
 
 	if (role === ROLES.AGENT) {
 		this.agentsLeft--;
 		this.currentTurn.guessesLeft--;
 	}
 
-	if (square[player] !== ROLES.AGENT || this.currentTurn.guessesLeft < 1) {
+	if (square[playerGivingClue] !== ROLES.AGENT || this.currentTurn.guessesLeft < 1) {
 		this.currentTurn.guessesLeft = 0;
 		this.turnsLeft--;
 	}
@@ -199,7 +168,7 @@ Game.prototype.getWordsOfEntityTypeForPlayer = function (entityType, player) {
 	}, this);
 };
 
-Game.prototype.getWords = function (player) {
+Game.prototype.getWords = function () {
 	const words = {};
 
 	Object.keys(this.wordMap).forEach(function (word) {
@@ -212,15 +181,19 @@ Game.prototype.getWords = function (player) {
 };
 
 Game.prototype.getViewForPlayer = function (player) {
-	const assasins = this.getWordsOfEntityTypeForPlayer(ROLES.ASSASIN, player);
-	const agents = this.getWordsOfEntityTypeForPlayer(ROLES.AGENT, player);
-	const nonAgents = this.getWordsOfEntityTypeForPlayer(ROLES.NON_AGENT, player);
+	if (!player) return this.getWords();
 
-	return {
-		agents,
-		nonAgents,
-		assasins,
-	};
+	const words = {};
+	const playerNumber = player === 'one' ? 'playerOne' : 'playerTwo';
+
+	Object.keys(this.wordMap).forEach(function (word) {
+		words[word] = {
+			role: this.wordMap[word][playerNumber],
+			roleRevealedForClueGiver: this.wordMap[word].roleRevealedForClueGiver,
+		};
+	}, this);
+
+	return words;
 };
 
 module.exports = Game;

@@ -19,6 +19,7 @@ const reducer = createReducer({
 			words: {
 				...state.words,
 				[word]: {
+					...state.words[word],
 					roleRevealedForClueGiver,
 				},
 			},
@@ -37,7 +38,8 @@ export function enterGame({ gameId }) {
 export function makeGuess({ word }) {
 	return (dispatch, getState) => {
 		const { gameId } = getState().game;
-		return guess({ gameId, word });
+		const { playerId } = getState();
+		return guess({ gameId, word, player: playerId });
 	};
 }
 
