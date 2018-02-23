@@ -14,18 +14,13 @@
 	border-radius: 5px;
 	padding: 20px;
 	font-size: 24px;
-	background-color: #1e1e1e;
+	background: #1e1e1e;
 	min-height: 60px;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	user-select: none;
 	cursor: pointer;
-}
-
-.word.agent {
-	background-color: #029192;
-	cursor: auto;
 }
 
 .word.non-agent-player-one {
@@ -37,18 +32,50 @@
 }
 
 .word.non-agent-player-one.non-agent-player-two {
-	background-color: #721932;
+	background: #721932;
+	cursor: auto;
+}
+
+.word.agent {
+	background: #029192;
 	cursor: auto;
 }
 
 .word.assasin {
-	background-color: #fff;
+	background: #fff !important;
 	color: black;
 	cursor: auto;
 }
 
+.word.my-agent {
+	color: #029192;
+}
+
+.word.my-non-agent {
+	color: grey;
+}
+
+.word.my-assasin {
+	color: #DD1919;
+}
+
+.word:not(.guessed):not(.neutral):hover {
+	background: #5cbf2a;
+}
+
 .players {
-	margin: 100px auto;
 	text-align: center;
-	font-size: 36px;
+	font-size: 24px;
+}
+
+.player-info {
+	padding: 50px 100px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.player-display {
+	font-size: 24px;
+	line-height: 1.5;
 }

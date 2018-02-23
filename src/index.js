@@ -68,16 +68,18 @@ function handleRequest(ws, data) {
 				type: type,
 				payload: {
 					gameId: gameId,
-					words: getWordsForPlayer(gameId),
+					words: getWordsForPlayer(gameId, ws._player),
 				},
 			});
 			break;
 		case 'guess':
 			broadcast(gameId, {
 				type: 'guess',
-				payload: Object.assign({ gameId: gameId }, makeGuess(gameId, data.payload.word)),
+				payload: Object.assign({ gameId: gameId }, makeGuess(gameId, data.payload.word, data.payload.player)),
 			});
 			break;
+		case 'changePlayer':
+			handlePlayerChanged(ws, data.payload.player);
 		default:
 			break;
 	}
@@ -110,6 +112,25 @@ function handlePlayerJoined(ws, gameId) {
 		payload: {
 			count: sockets[gameId].size,
 		}
+	});
+}
+
+function handlePlayerChanged(ws, player) {
+	ws._player = player;
+
+	send(ws, {
+		type: 'playerChanged',
+		payload: {
+			player: player,
+		}
+	});
+
+	send(ws, {
+		type: 'words',
+		payload: {
+			gameId: ws._gameId,
+			words: getWordsForPlayer(ws._gameId, ws._player),
+		},
 	});
 }
 
@@ -155,9 +176,9 @@ function getWordsForPlayer(gameId, player) {
 	return player ? game.getViewForPlayer(player) : game.getWords();
 }
 
-function makeGuess(gameId, word) {
+function makeGuess(gameId, word, player) {
 	const game = getOrCreateGame(gameId);
-	return game.guess(word);
+	return game.guess(word, player);
 }
 
 // ROUTES

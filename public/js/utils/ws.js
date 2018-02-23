@@ -26,7 +26,6 @@ function onClose() {
 	ws.removeEventListener('close', onClose);
 }
 
-
 export function start(gameId) {
 	ws = ws || new WebSocket(HOST);
 
