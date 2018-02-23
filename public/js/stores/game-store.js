@@ -1,7 +1,7 @@
 import { createAction, createReducer } from 'redux-act';
 import { fetchGame, guess } from '../fetchers';
 
-const addOrReplaceGame = createAction('Add or replace game');
+export const addOrReplaceGame = createAction('Add or replace game');
 export const updateWordInGame = createAction('Update roleRevealedForClueGiver for a word in a game');
 
 const reducer = createReducer({
@@ -31,22 +31,13 @@ export const getGame = state => state && state.game;
 
 // Thunks
 export function enterGame({ gameId }) {
-	return dispatch => fetchGame({ gameId }).then((game) => {
-		dispatch(addOrReplaceGame(game));
-	});
+	return () => fetchGame({ gameId });
 }
 
 export function makeGuess({ word }) {
 	return (dispatch, getState) => {
 		const { gameId } = getState().game;
-
-		return guess({ gameId, word }).then(({ roleRevealedForClueGiver } = {}) => {
-			dispatch(updateWordInGame({
-				gameId,
-				word,
-				roleRevealedForClueGiver,
-			}));
-		});
+		return guess({ gameId, word });
 	};
 }
 
