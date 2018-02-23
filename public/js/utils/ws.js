@@ -21,6 +21,8 @@ function onMessage({ data } = {}) {
 }
 
 function onClose() {
+	console.log('closing connection');
+
 	ws.removeEventListener('open', onConnect);
 	ws.removeEventListener('message', onMessage);
 	ws.removeEventListener('close', onClose);

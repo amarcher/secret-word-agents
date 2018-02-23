@@ -15,18 +15,36 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // START SERVER
 
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server: server });
+const wss = new WebSocketServer({ server: server, clientTracking: true });
 server.listen(port, function() {
 	console.log('Server with web socket capabilities listening on port ' + port);
 });
 
+
+// Ping all active clients every thirty seconds
+const noop = function() {};
+const interval = setInterval(function ping() {
+	wss.clients.forEach(function each(ws) {
+		if (ws.isAlive === false) return ws.terminate();
+
+		ws.isAlive = false;
+		ws.ping(noop);
+	});
+}, 30000);
+
+
 // HANDLE INCOMING CONNECTIONS
 
 wss.on('connection', function(ws) {
+	ws.isAlive = true;
  	console.log('new websocket connection open');
 
  	// TODO: Remove this counting
  	console.log('we now have ' + wss.clients.size + ' total clients');
+
+	ws.on('pong', function() {
+		ws.isAlive = true;
+	});
 
  	ws.on('message', function(data) {
  		const parsedData = JSON.parse(data);
