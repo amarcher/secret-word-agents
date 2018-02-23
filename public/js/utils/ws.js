@@ -5,12 +5,13 @@ const HOST = window.location.origin.replace(/^http/, 'ws');
 let ws;
 
 export function send(data) {
-	return ws.send(JSON.stringify(data));
+	if (!ws) throw new Error('No WebSocket!');
+	ws.send(JSON.stringify(data));
 }
 
 function onConnect(gameId) {
 	console.log('ws connected'); // eslint-disable-line no-console
-	send({ gameId });
+	send({ type: 'words', gameId });
 }
 
 function onMessage({ data } = {}) {

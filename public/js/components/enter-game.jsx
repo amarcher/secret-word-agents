@@ -1,15 +1,8 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
-import { connect } from 'react-redux';
 
 import { history } from '../stores';
-import { enterGame } from '../stores/game-store';
 
-const propTypes = {
-	enterGame: PropTypes.func.isRequired,
-};
-
-export class BaseEnterGame extends Component {
+export default class EnterGame extends Component {
 	constructor(props) {
 		super(props);
 
@@ -30,7 +23,7 @@ export class BaseEnterGame extends Component {
 		e.preventDefault();
 		const { gameId } = this.state;
 
-		this.props.enterGame({ gameId }).then(() => history.push(`/${gameId}`));
+		history.push(`/${gameId}`);
 	}
 
 	render() {
@@ -51,11 +44,3 @@ export class BaseEnterGame extends Component {
 		);
 	}
 }
-
-BaseEnterGame.propTypes = propTypes;
-
-const mapDispatchToProps = {
-	enterGame,
-};
-
-export default connect(undefined, mapDispatchToProps)(BaseEnterGame);

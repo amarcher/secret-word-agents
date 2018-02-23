@@ -31,18 +31,7 @@ wss.on('connection', function(ws) {
  	ws.on('message', function(data) {
  		const parsedData = JSON.parse(data);
 	 	console.log('websocket message', parsedData);
-
- 		const gameId = parsedData.gameId;
-	 	if (gameId) {
-	 		if (ws._gameId && ws._gameId !== gameId && sockets[ws._gameId]) {
-		 		// player has joined a different game, so we boot them from their existing game
-		 		handlePlayerLeft(ws);
-	 		}
-
-	 		if (!sockets[gameId] || !sockets[gameId].has(ws)) {
-		 		handlePlayerJoined(ws, gameId);
-	 		}
-	 	}
+	 	handleRequest(ws, parsedData);
  	});
 
  	ws.on('close', function(info) {
@@ -56,7 +45,43 @@ wss.on('connection', function(ws) {
  		// NOTE: Unhandled errors cause the app to crash... So we need this!
 		console.log('websocket error', info.message);
 	});
-})
+});
+
+function handleRequest(ws, data) {
+	const gameId = data.gameId;
+	const type = data.type;
+
+	if (!gameId) return;
+
+	if (ws._gameId && ws._gameId !== gameId && sockets[ws._gameId]) {
+ 		// player has joined a different game, so we boot them from their existing game
+ 		handlePlayerLeft(ws);
+	}
+
+	if (!sockets[gameId] || !sockets[gameId].has(ws)) {
+ 		handlePlayerJoined(ws, gameId);
+	}
+
+	switch(type) {
+		case 'words':
+			send(ws, {
+				type: type,
+				payload: {
+					gameId: gameId,
+					words: getWordsForPlayer(gameId),
+				},
+			});
+			break;
+		case 'guess':
+			broadcast(gameId, {
+				type: 'guess',
+				payload: Object.assign({ gameId: gameId }, makeGuess(gameId, data.payload.word)),
+			});
+			break;
+		default:
+			break;
+	}
+}
 
 function handlePlayerLeft(ws) {
 	sockets[ws._gameId].delete(ws);
@@ -87,6 +112,12 @@ function handlePlayerJoined(ws, gameId) {
 		}
 	});
 }
+
+function send(client, data) {
+	if (client.readyState === 1) {
+		client.send(JSON.stringify(data));
+	}
+};
 
 function broadcast(gameId, data) {
 	if (sockets[gameId]) {
@@ -119,38 +150,17 @@ function getOrCreateGame(hash) {
 	return games[hash];
 }
 
+function getWordsForPlayer(gameId, player) {
+	const game = getOrCreateGame(gameId);
+	return player ? game.getViewForPlayer(player) : game.getWords();
+}
+
+function makeGuess(gameId, word) {
+	const game = getOrCreateGame(gameId);
+	return game.guess(word);
+}
 
 // ROUTES
-
-app.post('/words', (req, res) => {
-	const gameId = req.body.gameId || DEFAULT_GAME_ID;
-	const game = getOrCreateGame(gameId);
-	const player = PLAYERS[req.body.player];
-	const view = player ? game.getViewForPlayer(player) : game.getWords();
-
-	res.send({
-		gameId,
-		words: view,
-	});
-});
-
-app.post('/guess', (req, res) => {
-	const gameId = req.body.gameId || DEFAULT_GAME_ID;
-	const word = req.body.word;
-	const game = getOrCreateGame(gameId);
-	const guess = game.guess(word);
-
-	const payload = {
-		gameId,
-		word: guess.word,
-		roleRevealedForClueGiver: guess.roleRevealedForClueGiver,
-		guessesLeft: guess.guessesLeft
-	};
-
-	res.send(payload);
-
-	broadcast(gameId, { type: 'guess', payload: payload });
-});
 
 app.all('*', (req, res) => {
 	res.render('layout');
