@@ -1,18 +1,18 @@
 .words {
 	display: grid;
-	grid-template-columns: repeat(5, auto);
+	grid-template-columns: repeat(5, 1fr);
 	grid-template-rows: repeat(5, auto);
 	grid-auto-flow: column;
 	grid-column-gap: 10px;
 	grid-row-gap: 10px;
 
 	max-width: 90%;
-	margin: 100px auto;
+	margin: 60px auto;
 }
 
 .word {
 	border-radius: 5px;
-	padding: 20px;
+	padding: 20px 0;
 	font-size: 24px;
 	background: #1e1e1e;
 	min-height: 60px;
@@ -21,6 +21,11 @@
 	align-items: center;
 	user-select: none;
 	cursor: pointer;
+	transition: background 0.3s;
+}
+
+.word.neutral {
+	cursor: auto;
 }
 
 .word.non-agent-player-one {
@@ -47,15 +52,18 @@
 	cursor: auto;
 }
 
-.word.my-agent {
+.word.my-agent,
+.color-agent {
 	color: #029192;
 }
 
-.word.my-non-agent {
+.word.my-non-agent,
+.color-non-agent {
 	color: grey;
 }
 
-.word.my-assasin {
+.word.my-assasin,
+.color-assasin {
 	color: #DD1919;
 }
 
@@ -64,8 +72,16 @@
 }
 
 .players {
-	text-align: center;
-	font-size: 24px;
+	display: flex;
+	align-items: center;
+	justify-content: space-around;
+}
+
+.player {
+	width: 24px;
+	height: 24px;
+	background: no-repeat url('../businessman.svg');
+	background-size: contain;
 }
 
 .player-info {
@@ -78,4 +94,91 @@
 .player-display {
 	font-size: 24px;
 	line-height: 1.5;
+}
+
+.title {
+	font-size: 48px;
+	line-height: 72px;
+}
+
+.enter-game-container {
+	height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.enter-game {
+	text-align: center;
+	user-select: none;
+}
+
+.enter-game-input {
+	margin: 12px;
+	text-align: center;
+}
+
+.enter-game-button {
+	transition: opacity 0.3s;
+}
+
+.enter-game-button:disabled {
+	opacity: 0;
+}
+
+.info-view {
+	display: flex;
+	justify-content: flex-end;
+	padding: 24px;
+}
+
+.info-container {
+	flex: 0 0 auto;
+	position: relative;
+	align-self: right;
+}
+
+.info-container .info {
+	background: #1e1e1e;
+	position: absolute;
+	opacity: 0;
+	right: 0;
+	margin-top: 10px;
+	width: 600px;
+	border-radius: 5px;
+	padding: 12px;
+	z-index: -1;
+
+	transition: opacity,box-shadow 0.3s;
+}
+
+.info-container.open .info-button {
+	background: #5cbf2a;
+}
+
+.info-container.open .info {
+	opacity: 1;
+	box-shadow: 0 0 40px 20px #0ff;
+	z-index: 0;
+}
+
+.info-how-to-play {
+	flex: 1 0 auto;
+}
+
+.info-attribution {
+	margin-top: 24px;
+	flex: 0 0 auto;
+	font-size: 10px;
+	text-align: center;
+}
+
+.info-how-to-play p,
+.info-how-to-play ol {
+	margin: 12px 0;
+	line-height: 20px;
+}
+
+.info-how-to-play ol {
+	margin: 6px 6px;
 }

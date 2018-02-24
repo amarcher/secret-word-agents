@@ -9,10 +9,16 @@ const propTypes = {
 };
 
 export class BasePlayerView extends Component {
+	renderPlayers() {
+		return Array(this.props.players).fill().map(() => (
+			<div className="player" />
+		));
+	}
+
 	render() {
 		return (
 			<div className="players">
-				Connected Players: {this.props.players}
+				{this.renderPlayers()}
 			</div>
 		);
 	}

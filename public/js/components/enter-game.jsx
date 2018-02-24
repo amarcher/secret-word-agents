@@ -23,23 +23,25 @@ export default class EnterGame extends Component {
 		e.preventDefault();
 		const { gameId } = this.state;
 
-		history.push(`/${gameId}`);
+		if (gameId) {
+			history.push(`/${gameId}`);
+		}
 	}
 
 	render() {
-		const buttonText = this.state.gameId ? 'Create' : 'Enter';
-
 		return (
-			<div>
-				<form onSubmit={this.onSubmit}>
-					<label htmlFor="game-name">
-						Game Code:
-						<input name="game-name" placeholder="GAME" onChange={this.onChange} />
-					</label>
-					<button type="submit">
-						{buttonText}
-					</button>
-				</form>
+			<div className="enter-game-container">
+				<div className="enter-game">
+					<h1 className="title">Dooler</h1>
+					<form onSubmit={this.onSubmit}>
+						<input className="enter-game-input" placeholder="Enter Game Code" onChange={this.onChange} />
+						<div>
+							<button className="enter-game-button" type="submit" disabled={!this.state.gameId}>
+								Enter
+							</button>
+						</div>
+					</form>
+				</div>
 			</div>
 		);
 	}

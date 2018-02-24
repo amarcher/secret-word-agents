@@ -201,6 +201,8 @@ function makeGuess(gameId, word, player) {
 
 // ROUTES
 
+app.get('*\.(gif|png|jpe?g|svg)', express.static('public/img'));
+
 app.all('*', (req, res) => {
 	res.render('layout');
 });

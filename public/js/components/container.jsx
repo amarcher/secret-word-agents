@@ -4,6 +4,7 @@ import { connect } from 'react-redux';
 
 import PlayerView from './player-view';
 import GameView from './game-view';
+import InfoView from './info-view';
 import PlayerSelect from './player-select';
 import { enterGame, getGame } from '../stores/game-store';
 
@@ -36,6 +37,7 @@ export class BaseContainer extends Component {
 
 		return (
 			<div className="container">
+				<InfoView />
 				<GameView game={game} />
 				<div className="player-info">
 					<PlayerSelect />

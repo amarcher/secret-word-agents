@@ -21,8 +21,6 @@ const defaultProps = {
 
 export class BasePlayerSelect extends Component {
 	renderButton(playerId) {
-		if (playerId === this.props.playerId) return null;
-
 		const text = playerId ? `Be player ${playerId}` : 'Be neutral';
 
 		return (
@@ -33,8 +31,8 @@ export class BasePlayerSelect extends Component {
 	}
 
 	render() {
-		const buttons = Object.values(PLAYERS).map(this.renderButton, this);
-		const text = this.props.playerId ? `You are currently player ${this.props.playerId}` : 'Choose a player';
+		const buttons = this.props.playerId ? this.renderButton(PLAYERS.NEUTRAL) : [PLAYERS.ONE, PLAYERS.TWO].map(this.renderButton, this);
+		const text = this.props.playerId ? `You are player ${this.props.playerId}` : 'Choose a player';
 
 		return (
 			<div className="player-select">

@@ -6,7 +6,7 @@ body {
 
 * {
 	color: white;
-	font-family: BlinkMacSystemFontuser;
+	font-family: BlinkMacSystemFont;
 }
 
 input, button {
@@ -33,22 +33,6 @@ button:active {
 button:focus,
 input:focus {
 	outline: 0;
-}
-
-/** GRID **/
-
-.row {
-	display: flex;
-	margin: 12px 0;
-}
-
-.col {
-	flex: 1;
-	margin: 0 12px;
-}
-
-.col-4 {
-	flex-basis: 33.3333333%;
 }
 
 /** HELPER CLASSES **/

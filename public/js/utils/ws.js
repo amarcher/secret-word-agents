@@ -21,7 +21,7 @@ function onMessage({ data } = {}) {
 }
 
 function onClose() {
-	console.log('closing connection');
+	console.log('closing connection'); // eslint-disable-line no-console
 
 	ws.removeEventListener('open', onConnect);
 	ws.removeEventListener('message', onMessage);
