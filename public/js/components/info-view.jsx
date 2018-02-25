@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import classNames from 'classnames';
+import findParent from 'find-parent';
 
 export default class InfoView extends Component {
 	constructor(props) {
@@ -8,6 +9,37 @@ export default class InfoView extends Component {
 		this.state = {
 			isOpen: false,
 		};
+
+		this.onClick = this.onClick.bind(this);
+		this.onBodyClick = this.onBodyClick.bind(this);
+	}
+
+	componentWillUnmount() {
+		window.document.body.removeEventListener('click', this.onBodyClick);
+	}
+
+	onClick() {
+		this.setState(prevState => ({
+			isOpen: !prevState.isOpen,
+		}), () => {
+			if (this.state.isOpen) {
+				window.document.body.addEventListener('click', this.onBodyClick);
+			}
+		});
+	}
+
+	onBodyClick(e) {
+		const targetIsInfoOrButton = findParent.byMatcher(e.target, node => node.classList.contains('info') || node.classList.contains('info-button'));
+
+		if (targetIsInfoOrButton) return;
+
+		e.preventDefault();
+
+		this.setState(() => ({
+			isOpen: false,
+		}));
+
+		window.document.body.removeEventListener('click', this.onBodyClick);
 	}
 
 	renderHowTo() {
@@ -77,7 +109,7 @@ export default class InfoView extends Component {
 		return (
 			<div className="info-view">
 				<div className={className}>
-					<button className="info-button" type="button" onClick={() => this.setState({ isOpen: !isOpen })}>?</button>
+					<button className="info-button" type="button" onClick={this.onClick}>?</button>
 					<div className="info">
 						{this.renderHowTo()}
 						{this.renderAttribution()}

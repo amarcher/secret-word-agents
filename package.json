@@ -27,6 +27,7 @@
     "classnames": "^2.2.5",
     "ejs": "^2.5.7",
     "express": "^4.16.2",
+    "find-parent": "^2.0.2",
     "history": "^4.7.2",
     "http": "0.0.0",
     "prop-types": "^15.6.0",

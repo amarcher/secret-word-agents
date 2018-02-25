@@ -10,8 +10,8 @@ const propTypes = {
 
 export class BasePlayerView extends Component {
 	renderPlayers() {
-		return Array(this.props.players).fill().map(() => (
-			<div className="player" />
+		return Array(this.props.players).fill().map((_el, index) => (
+			<div className="player" key={index} /> // eslint-disable-line react/no-array-index-key
 		));
 	}
 
