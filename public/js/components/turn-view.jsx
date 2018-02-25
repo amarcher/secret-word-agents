@@ -10,7 +10,9 @@ const propTypes = {
 
 export class BaseTurnView extends Component {
 	renderTurns() {
-		return Array(this.props.turnsLeft).fill().map((_el, index) => (
+		const length = Math.max(this.props.turnsLeft, 0);
+
+		return Array(length).fill().map((_el, index) => (
 			<div className="turn" key={index} /> // eslint-disable-line react/no-array-index-key
 		));
 	}
