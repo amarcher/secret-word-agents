@@ -5,7 +5,6 @@ export const setPlayerId = createAction('Set player id');
 
 const reducer = createReducer({
 	[setPlayerId]: (state, payload) => {
-		if (!payload.player) return state;
 		return payload.player;
 	},
 }, '');
