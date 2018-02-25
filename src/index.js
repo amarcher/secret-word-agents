@@ -89,6 +89,10 @@ function handleRequest(ws, data) {
 					words: getWordsForPlayer(gameId, ws._player),
 				},
 			});
+			send(ws, {
+				type: 'turns',
+				payload: getOrCreateGame(gameId).getTurnsLeft(),
+			});
 			break;
 		case 'guess':
 			broadcast(gameId, {
@@ -196,7 +200,19 @@ function getWordsForPlayer(gameId, player) {
 
 function makeGuess(gameId, word, player) {
 	const game = getOrCreateGame(gameId);
-	return game.guess(word, player);
+
+	const turnsLeftBefore = game.getTurnsLeft();
+	const guess = game.guess(word, player);
+	const turnsLeftAfter = game.getTurnsLeft();
+
+	if (turnsLeftBefore !== turnsLeftAfter) {
+		broadcast(gameId, {
+			type: 'turns',
+			payload: turnsLeftAfter,
+		});
+	}
+
+	return guess;
 }
 
 // ROUTES

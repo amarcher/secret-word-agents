@@ -102,14 +102,13 @@ function Game() {
 	this.wordMap = getWordMap();
 	this.agentsLeft = COUNTS.AGENTS;
 	this.turnsLeft = COUNTS.TURNS;
-
-	// TODO: remove
-	this.giveClueForTurn('playerOne', 'infinity', COUNTS.WORDS);
 }
 
 Game.prototype.giveClueForTurn = function (playerGivingClue, clueWord, guessesLeft) {
 	if (this.currentTurn && this.currentTurn.guessesLeft > 0) {
-		throw new Error(`There are still ${this.currentTurn.guessesLeft}guesses left in the current turn`);
+		console.log(`There were still ${this.currentTurn.guessesLeft} guesses left in the current turn, but we got a new clue`);
+
+		this.turnsLeft -= 1;
 	}
 
 	this.currentTurn = {
@@ -125,9 +124,21 @@ Game.prototype.guess = function (word, player) {
 	const square = this.wordMap[word];
 	let playerGivingClue = player === 'one' ? 'playerTwo' : 'playerOne';
 
-	if (!player) {
-		console.log('No player provided.');
-		playerGivingClue = this.currentTurn.playerGivingClue;
+	// Play is proceeding without using input
+	if (!this.currentTurn) {
+		this.currentTurn = {
+			playerGivingClue,
+			guessesLeft: this.agentsLeft,
+			clueWord: '',
+		};
+	} else if (this.currentTurn.playerGivingClue !== playerGivingClue) {
+		this.turnsLeft -= 1;
+
+		this.currentTurn = {
+			playerGivingClue,
+			guessesLeft: this.agentsLeft,
+			clueWord: '',
+		}
 	}
 
 	const role = square[playerGivingClue];
@@ -150,17 +161,26 @@ Game.prototype.guess = function (word, player) {
 		this.currentTurn.guessesLeft--;
 	}
 
-	if (square[playerGivingClue] !== ROLES.AGENT || this.currentTurn.guessesLeft < 1) {
-		this.currentTurn.guessesLeft = 0;
+	if (square[playerGivingClue] === ROLES.NON_AGENT || (square[playerGivingClue] === ROLES.AGENT && this.currentTurn.guessesLeft < 1)) {
+		this.currentTurn = undefined;
 		this.turnsLeft--;
+	}
+
+	if (square[playerGivingClue] === ROLES.ASSASIN) {
+		this.currentTurn = undefined;
+		this.turnsLeft = 0;
 	}
 
 	return {
 		word: word,
 		roleRevealedForClueGiver: square.roleRevealedForClueGiver,
-		guessesLeft: this.currentTurn.guessesLeft,
+		guessesLeft: (this.currentTurn && this.currentTurn.guessesLeft) || 0,
 	};
 };
+
+Game.prototype.getTurnsLeft = function() {
+	return this.turnsLeft;
+}
 
 Game.prototype.getWordsOfEntityTypeForPlayer = function (entityType, player) {
 	return Object.keys(this.wordMap).filter(function (word) {

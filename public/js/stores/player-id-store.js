@@ -4,9 +4,7 @@ import { changePlayer } from '../fetchers';
 export const setPlayerId = createAction('Set player id');
 
 const reducer = createReducer({
-	[setPlayerId]: (state, payload) => {
-		return payload.player;
-	},
+	[setPlayerId]: (state, payload) => payload.player,
 }, '');
 
 

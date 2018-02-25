@@ -84,11 +84,19 @@
 	background-size: contain;
 }
 
-.player-info {
-	padding: 50px 100px;
+.player-info,
+.header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+}
+
+.player-info {
+	padding: 50px 5%;
+}
+
+.header {
+	padding: 0 5%	;
 }
 
 .player-display {
@@ -129,24 +137,23 @@
 .info-view {
 	display: flex;
 	justify-content: flex-end;
-	padding: 24px;
+	padding: 24px 0;
 }
 
 .info-container {
 	flex: 0 0 auto;
 	position: relative;
-	align-self: right;
 }
 
 .info-container .info {
 	background: #1e1e1e;
-	position: absolute;
-	opacity: 0;
-	right: 0;
-	margin-top: 10px;
-	width: 600px;
 	border-radius: 5px;
+	margin-top: 10px;
+	opacity: 0;
 	padding: 12px;
+	position: absolute;
+	right: 0;
+	width: 600px;
 	z-index: -1;
 
 	transition: opacity,box-shadow 0.3s;
@@ -157,8 +164,8 @@
 }
 
 .info-container.open .info {
-	opacity: 1;
 	box-shadow: 0 0 40px 20px #0ff;
+	opacity: 1;
 	z-index: 0;
 }
 
@@ -167,18 +174,27 @@
 }
 
 .info-attribution {
-	margin-top: 24px;
 	flex: 0 0 auto;
 	font-size: 10px;
+	margin-top: 24px;
 	text-align: center;
 }
 
 .info-how-to-play p,
 .info-how-to-play ol {
-	margin: 12px 0;
 	line-height: 20px;
+	margin: 12px 0;
 }
 
 .info-how-to-play ol {
 	margin: 6px 6px;
+}
+
+.turn {
+	display: inline-block;
+	width: 24px;
+	height: 24px;
+	margin: 0 3px;
+	background: no-repeat url('../mushroom.svg');
+	background-size: contain;
 }
