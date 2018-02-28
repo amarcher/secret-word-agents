@@ -67,8 +67,10 @@
 	color: #DD1919;
 }
 
-.word:not(.guessed):not(.neutral):hover {
-	background: #5cbf2a;
+@media (hover: hover) {
+	.word:not(.guessed):not(.neutral):hover {
+		background: #5cbf2a;
+	}
 }
 
 .players {
