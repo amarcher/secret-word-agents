@@ -24,6 +24,10 @@
 	transition: background 0.3s;
 }
 
+.word.guessed-this-turn {
+	box-shadow: 0 0 10px 10px #B82;
+}
+
 .word.neutral {
 	cursor: auto;
 }
@@ -73,10 +77,15 @@
 	}
 }
 
+.player-select {
+	flex: 0 1 350px;
+}
+
 .players {
+	flex: 0 1 350px;
 	display: flex;
 	align-items: center;
-	justify-content: space-around;
+	justify-content: flex-end;
 }
 
 .player {
@@ -94,11 +103,12 @@
 }
 
 .player-info {
-	padding: 50px 5%;
+	align-items: flex-end;
+	padding: 10px 5%;
 }
 
 .header {
-	padding: 0 5%	;
+	padding: 0 5%;
 }
 
 .player-display {
@@ -137,13 +147,13 @@
 }
 
 .info-view {
+	flex: 0 1 300px;
 	display: flex;
 	justify-content: flex-end;
 	padding: 24px 0;
 }
 
 .info-container {
-	flex: 0 0 auto;
 	position: relative;
 }
 
@@ -192,6 +202,10 @@
 	margin: 6px 6px;
 }
 
+.turn-view {
+	flex: 0 1 300px;
+}
+
 .turn {
 	display: inline-block;
 	width: 24px;
@@ -199,4 +213,37 @@
 	margin: 0 3px;
 	background: no-repeat url('../mushroom.svg');
 	background-size: contain;
+}
+
+.game-over {
+	font-size: 24px;
+}
+
+.clue {
+	flex: 1 0 auto;
+}
+
+.clue-for-guesser {
+	font-size: 24px;
+}
+
+.clue-for-guesser-word {
+	margin-right: 12px;
+}
+
+.word-input,
+.number-input {
+	margin-right: 6px;
+}
+
+.word-input {
+	max-width: 18	0px;
+}
+
+.number-input {
+	max-width: 50px;
+}
+
+.light {
+	color: #898989;
 }

@@ -104,7 +104,9 @@ function Game() {
 	this.turnsLeft = COUNTS.TURNS;
 }
 
-Game.prototype.giveClueForTurn = function (playerGivingClue, clueWord, guessesLeft) {
+Game.prototype.giveClueForTurn = function (player, clueWord, guessesLeft) {
+	const playerGivingClue = player === 'one' ? 'playerOne' : 'playerTwo';
+
 	if (this.currentTurn && this.currentTurn.guessesLeft > 0) {
 		console.log(`There were still ${this.currentTurn.guessesLeft} guesses left in the current turn, but we got a new clue`);
 
@@ -119,6 +121,14 @@ Game.prototype.giveClueForTurn = function (playerGivingClue, clueWord, guessesLe
 
 	return this.currentTurn;
 };
+
+Game.prototype.getCurrentClue = function () {
+	if (this.currentTurn && this.currentTurn.guessesLeft > 0) {
+		return this.currentTurn;
+	}
+
+	return null;
+}
 
 Game.prototype.guess = function (word, player) {
 	const square = this.wordMap[word];
@@ -142,7 +152,6 @@ Game.prototype.guess = function (word, player) {
 	}
 
 	const role = square[playerGivingClue];
-
 
 	if (!square) {
 		console.log(`The word "${word}"" is not on the board.`);
@@ -177,6 +186,13 @@ Game.prototype.guess = function (word, player) {
 		guessesLeft: (this.currentTurn && this.currentTurn.guessesLeft) || 0,
 	};
 };
+
+Game.prototype.endTurn = function() {
+	if (this.currentTurn) {
+		this.turnsLeft -= 1;
+		this.currentTurn = undefined;
+	}
+}
 
 Game.prototype.getTurnsLeft = function() {
 	return this.turnsLeft;

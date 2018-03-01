@@ -15,7 +15,13 @@ export default class GameView extends Component {
 		const { game } = this.props;
 
 		return Object.keys(game.words).map(word => (
-			<Word word={word} role={game.words[word].role} revealed={game.words[word].roleRevealedForClueGiver} key={word} />
+			<Word
+				word={word}
+				guessedThisTurn={game.words[word].guessedThisTurn}
+				role={game.words[word].role}
+				revealed={game.words[word].roleRevealedForClueGiver}
+				key={word}
+			/>
 		));
 	}
 

@@ -93,15 +93,20 @@ function handleRequest(ws, data) {
 				type: 'turns',
 				payload: getOrCreateGame(gameId).getTurnsLeft(),
 			});
+			maybeSendCurrentClue(ws, gameId);
 			break;
 		case 'guess':
-			broadcast(gameId, {
-				type: 'guess',
-				payload: Object.assign({ gameId: gameId }, makeGuess(gameId, data.payload.word, data.payload.player)),
-			});
+			makeGuess(gameId, data.payload.word, data.payload.player);
 			break;
 		case 'changePlayer':
 			handlePlayerChanged(ws, data.payload.player);
+			break;
+		case 'giveClue':
+			giveClue(gameId, data.payload.player, data.payload.word, data.payload.number);
+			break;
+		case 'endTurn':
+			endTurn(gameId);
+			break;
 		default:
 			break;
 	}
@@ -193,6 +198,43 @@ function getOrCreateGame(hash) {
 	return games[hash];
 }
 
+function giveClue(gameId, player, word, number) {
+	const game = getOrCreateGame(gameId);
+	const turnsLeftBefore = game.getTurnsLeft();
+	const clue = game.giveClueForTurn(player, word, number);
+	const turnsLeftAfter = game.getTurnsLeft();
+
+	if (turnsLeftBefore !== turnsLeftAfter) {
+		broadcast(gameId, {
+			type: 'turns',
+			payload: turnsLeftAfter,
+		});
+	}
+
+	broadcast(gameId, {
+		type: 'clueGiven',
+		payload: {
+			playerGivingClue: clue.playerGivingClue,
+			number: clue.guessesLeft,
+			word: clue.clueWord,
+		}
+	});
+}
+
+function endTurn(gameId) {
+	const game = getOrCreateGame(gameId);
+	const turnsLeftBefore = game.getTurnsLeft();
+	game.endTurn();
+	const turnsLeftAfter = game.getTurnsLeft();
+
+	if (turnsLeftBefore !== turnsLeftAfter) {
+		broadcast(gameId, {
+			type: 'turns',
+			payload: turnsLeftAfter,
+		});
+	}
+}
+
 function getWordsForPlayer(gameId, player) {
 	const game = getOrCreateGame(gameId);
 	return player ? game.getViewForPlayer(player) : game.getWords();
@@ -205,14 +247,33 @@ function makeGuess(gameId, word, player) {
 	const guess = game.guess(word, player);
 	const turnsLeftAfter = game.getTurnsLeft();
 
+	broadcast(gameId, {
+		type: 'guess',
+		payload: Object.assign({}, guess, { gameId: gameId }),
+	});
+
 	if (turnsLeftBefore !== turnsLeftAfter) {
 		broadcast(gameId, {
 			type: 'turns',
 			payload: turnsLeftAfter,
 		});
 	}
+}
 
-	return guess;
+function maybeSendCurrentClue(ws, gameId) {
+	const game = getOrCreateGame(gameId);
+	const clue = game.getCurrentClue();
+
+	if (!clue) return;
+
+	send(ws, {
+		type: 'clueGiven',
+		payload: {
+			playerGivingClue: clue.playerGivingClue,
+			number: clue.guessesLeft,
+			word: clue.clueWord,
+		},
+	});
 }
 
 // ROUTES

@@ -2,11 +2,13 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
+import ClueView from './clue-view';
 import PlayerView from './player-view';
 import GameView from './game-view';
 import InfoView from './info-view';
 import TurnView from './turn-view';
 import PlayerSelect from './player-select';
+import EndTurn from './end-turn';
 import { enterGame, getGame } from '../stores/game-store';
 
 const propTypes = {
@@ -40,11 +42,13 @@ export class BaseContainer extends Component {
 			<div className="container">
 				<div className="header">
 					<TurnView />
+					<ClueView />
 					<InfoView />
 				</div>
 				<GameView game={game} />
 				<div className="player-info">
 					<PlayerSelect />
+					<EndTurn />
 					<PlayerView />
 				</div>
 			</div>
