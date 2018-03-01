@@ -15,11 +15,13 @@ const propTypes = {
 	}).isRequired,
 	playerId: PropTypes.string,
 	makeGuess: PropTypes.func.isRequired,
+	guessedThisTurn: PropTypes.bool,
 };
 
 const defaultProps = {
 	role: '',
 	playerId: '',
+	guessedThisTurn: false,
 };
 
 function isAgent(revealed) {
@@ -57,7 +59,7 @@ export class BaseWord extends Component {
 
 	render() {
 		const {
-			word, revealed, role, playerId,
+			word, revealed, role, playerId, guessedThisTurn,
 		} = this.props;
 
 		const className = classNames('word', {
@@ -70,6 +72,7 @@ export class BaseWord extends Component {
 			'my-assasin': role === 'ASSASIN',
 			guessed: isGuessed(playerId, revealed),
 			neutral: !role,
+			'guessed-this-turn': guessedThisTurn,
 		});
 
 		return (

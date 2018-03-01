@@ -6,7 +6,7 @@ import createHistory from 'history/createBrowserHistory';
 import gameReducer, { addOrReplaceGame, updateWordInGame } from './game-store';
 import playersReducer, { updatePlayerCount } from './players-store';
 import playerIdReducer, { setPlayerId } from './player-id-store';
-import turnsReducer, { updateTurns } from './turns-store';
+import turnsReducer, { updateTurnsLeft, updateClue, updateGuessesLeft } from './turns-store';
 
 export const history = createHistory();
 const middleware = routerMiddleware(history);
@@ -29,14 +29,17 @@ export function wsEvent(data) {
 	case 'words':
 		return store.dispatch(addOrReplaceGame(payload));
 	case 'guess':
-		return store.dispatch(updateWordInGame(payload));
+		store.dispatch(updateWordInGame(payload));
+		return store.dispatch(updateGuessesLeft(payload));
 	case 'playerLeft':
 	case 'playerJoined':
 		return store.dispatch(updatePlayerCount(payload));
 	case 'playerChanged':
 		return store.dispatch(setPlayerId(payload));
 	case 'turns':
-		return store.dispatch(updateTurns(payload));
+		return store.dispatch(updateTurnsLeft(payload));
+	case 'clueGiven':
+		return store.dispatch(updateClue(payload));
 	default:
 		return null;
 	}

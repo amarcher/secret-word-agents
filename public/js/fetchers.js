@@ -19,3 +19,20 @@ export function changePlayer({ gameId, player }) {
 		payload: { player },
 	});
 }
+
+export function endTurn({ gameId } = {}) {
+	send({
+		gameId,
+		type: 'endTurn',
+	});
+}
+
+export function giveClue({
+	gameId, player, word, number,
+} = {}) {
+	send({
+		gameId,
+		type: 'giveClue',
+		payload: { player, word, number },
+	});
+}
