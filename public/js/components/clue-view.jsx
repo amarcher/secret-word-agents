@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
 import { getClue, getGuessesLeft, getTurnsLeft, giveClue } from '../stores/turns-store';
+import { startNew } from '../stores/game-store';
 import { getPlayerId } from '../stores/player-id-store';
 
 const propTypes = {
@@ -14,6 +15,7 @@ const propTypes = {
 	guessesLeft: PropTypes.number,
 	playerId: PropTypes.string,
 	turnsLeft: PropTypes.number,
+	startNew: PropTypes.func.isRequired,
 };
 
 const defaultProps = {
@@ -97,9 +99,18 @@ export class BaseClueView extends Component {
 		);
 	}
 
+	maybeRenderStartNewGame() {
+		if (this.props.turnsLeft > 0) return null;
+
+		return (
+			<button type="button" onClick={() => this.props.startNew()}>Start New Game</button>
+		);
+	}
+
 	render() {
 		return (
 			<div className="clue-view">
+				{this.maybeRenderStartNewGame()}
 				{this.maybeRenderClue()}
 				{this.maybeRenderInput()}
 			</div>
@@ -110,7 +121,7 @@ export class BaseClueView extends Component {
 BaseClueView.propTypes = propTypes;
 BaseClueView.defaultProps = defaultProps;
 
-const mapDispatchToProps = { giveClue };
+const mapDispatchToProps = { giveClue, startNew };
 
 function mapStateToProps(state) {
 	return {
