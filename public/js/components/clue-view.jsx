@@ -57,7 +57,7 @@ export class BaseClueView extends Component {
 	}
 
 	maybeRenderClue() {
-		if (!this.props.playerId && !(this.props.clue && this.props.clue.word) && this.props.turnsLeft) {
+		if (!this.props.playerId && !(this.props.clue && this.props.clue.word) && this.props.turnsLeft > 0) {
 			return null;
 		}
 
@@ -81,7 +81,7 @@ export class BaseClueView extends Component {
 	}
 
 	maybeRenderInput() {
-		if (!this.props.playerId || (this.props.clue && this.props.clue.word) || !this.props.turnsLeft) {
+		if (!this.props.playerId || (this.props.clue && this.props.clue.word) || this.props.turnsLeft < 1) {
 			return null;
 		}
 

@@ -7,6 +7,7 @@ import gameReducer, { addOrReplaceGame, updateWordInGame } from './game-store';
 import playersReducer, { updatePlayerCount } from './players-store';
 import playerIdReducer, { setPlayerId } from './player-id-store';
 import turnsReducer, { updateTurnsLeft, updateClue, updateGuessesLeft } from './turns-store';
+import { sendNotification } from '../utils/notifications';
 
 export const history = createHistory();
 const middleware = routerMiddleware(history);
@@ -29,6 +30,8 @@ export function wsEvent(data) {
 	case 'words':
 		return store.dispatch(addOrReplaceGame(payload));
 	case 'guess':
+		sendNotification('A guess has been made in your game!');
+
 		store.dispatch(updateWordInGame(payload));
 		return store.dispatch(updateGuessesLeft(payload));
 	case 'playerLeft':
@@ -39,6 +42,8 @@ export function wsEvent(data) {
 	case 'turns':
 		return store.dispatch(updateTurnsLeft(payload));
 	case 'clueGiven':
+		sendNotification('A clue has been given in your game!');
+
 		return store.dispatch(updateClue(payload));
 	default:
 		return null;

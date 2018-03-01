@@ -10,6 +10,7 @@ import TurnView from './turn-view';
 import PlayerSelect from './player-select';
 import EndTurn from './end-turn';
 import { enterGame, getGame } from '../stores/game-store';
+import { enableNotifications } from '../utils/notifications';
 
 const propTypes = {
 	enterGame: PropTypes.func.isRequired,
@@ -29,6 +30,8 @@ export class BaseContainer extends Component {
 		const { gameId } = this.props;
 
 		this.props.enterGame({ gameId });
+
+		enableNotifications();
 	}
 
 	render() {
