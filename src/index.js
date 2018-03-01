@@ -297,6 +297,10 @@ function sendWholeGameState(ws, gameId) {
 
 app.get('*\.(gif|png|jpe?g|svg|ico)', express.static('public/img'));
 
+app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU', function(req, res) {
+	res.send('xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU.wcyPaoYEfPqL-uVIHthYuQAf46zGDhI2Dt6L-aP4veQ')
+});
+
 app.all('*', (req, res) => {
 	res.render('layout');
 });
