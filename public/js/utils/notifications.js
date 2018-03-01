@@ -18,6 +18,9 @@ export function enableNotifications() {
 
 export function sendNotification(text) {
 	if (!document.hasFocus() && window.Notification && Notification.permission === GRANTED) {
-		new Notification(text); // eslint-disable-line no-new
+		// eslint-disable-next-line no-new
+		new Notification(text, {
+			icon: 'apple-icon.png',
+		});
 	}
 }
