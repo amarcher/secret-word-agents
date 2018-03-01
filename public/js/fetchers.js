@@ -36,3 +36,12 @@ export function giveClue({
 		payload: { player, word, number },
 	});
 }
+
+export function startNewGame({
+	gameId,
+} = {}) {
+	send({
+		gameId,
+		type: 'startNewGame',
+	});
+}

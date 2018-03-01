@@ -82,18 +82,7 @@ function handleRequest(ws, data) {
 
 	switch(type) {
 		case 'words':
-			send(ws, {
-				type: type,
-				payload: {
-					gameId: gameId,
-					words: getWordsForPlayer(gameId, ws._player),
-				},
-			});
-			send(ws, {
-				type: 'turns',
-				payload: getOrCreateGame(gameId).getTurnsLeft(),
-			});
-			maybeSendCurrentClue(ws, gameId);
+			sendWholeGameState(ws, gameId);
 			break;
 		case 'guess':
 			makeGuess(gameId, data.payload.word, data.payload.player);
@@ -106,6 +95,17 @@ function handleRequest(ws, data) {
 			break;
 		case 'endTurn':
 			endTurn(gameId);
+			break;
+		case 'startNewGame':
+			const game = getOrCreateGame(gameId);
+			if (game && game.getTurnsLeft() < 1) {
+				games[gameId] = new Game();
+
+				sockets[gameId].forEach(function(client) {
+					sendWholeGameState(client, gameId);
+				});
+			}
+
 			break;
 		default:
 			break;
@@ -274,6 +274,23 @@ function maybeSendCurrentClue(ws, gameId) {
 			word: clue.clueWord,
 		},
 	});
+}
+
+function sendWholeGameState(ws, gameId) {
+	gameId = gameId || ws._gameId;
+
+	send(ws, {
+		type: 'words',
+		payload: {
+			gameId: gameId,
+			words: getWordsForPlayer(gameId, ws._player),
+		},
+	});
+	send(ws, {
+		type: 'turns',
+		payload: getOrCreateGame(gameId).getTurnsLeft(),
+	});
+	maybeSendCurrentClue(ws, gameId);
 }
 
 // ROUTES

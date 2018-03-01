@@ -1,5 +1,5 @@
 import { createAction, createReducer } from 'redux-act';
-import { fetchGame, guess } from '../fetchers';
+import { fetchGame, guess, startNewGame } from '../fetchers';
 import { updateTurnsLeft } from './turns-store';
 
 export const addOrReplaceGame = createAction('Add or replace game');
@@ -59,6 +59,10 @@ export function makeGuess({ word }) {
 		const { playerId } = getState();
 		return guess({ gameId, word, player: playerId });
 	};
+}
+
+export function startNew() {
+	return (dispatch, getState) => startNewGame({ gameId: getGameId(getState()) });
 }
 
 export default reducer;
