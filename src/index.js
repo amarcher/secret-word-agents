@@ -247,12 +247,20 @@ function makeGuess(gameId, word, player) {
 	const guess = game.guess(word, player);
 	const turnsLeftAfter = game.getTurnsLeft();
 
+	if (guess.playerGuessingChanged) {
+		broadcast(gameId, {
+			type: 'turns',
+			payload: turnsLeftBefore - 1,
+		});
+	}
+
 	broadcast(gameId, {
 		type: 'guess',
 		payload: Object.assign({}, guess, { gameId: gameId }),
 	});
 
-	if (turnsLeftBefore !== turnsLeftAfter) {
+	if ((!guess.playerGuessingChanged && turnsLeftBefore !== turnsLeftAfter) ||
+		turnsLeftBefore - 1 > turnsLeftAfter) {
 		broadcast(gameId, {
 			type: 'turns',
 			payload: turnsLeftAfter,
