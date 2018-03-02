@@ -133,6 +133,7 @@ Game.prototype.getCurrentClue = function () {
 Game.prototype.guess = function (word, player) {
 	const square = this.wordMap[word];
 	let playerGivingClue = player === 'one' ? 'playerTwo' : 'playerOne';
+	let playerGuessingChanged = false;
 
 	// Play is proceeding without using input
 	if (!this.currentTurn) {
@@ -149,6 +150,8 @@ Game.prototype.guess = function (word, player) {
 			guessesLeft: this.agentsLeft,
 			clueWord: '',
 		}
+
+		playerGuessingChanged = true;
 	}
 
 	const role = square[playerGivingClue];
@@ -184,6 +187,7 @@ Game.prototype.guess = function (word, player) {
 		word: word,
 		roleRevealedForClueGiver: square.roleRevealedForClueGiver,
 		guessesLeft: (this.currentTurn && this.currentTurn.guessesLeft) || 0,
+		playerGuessingChanged: playerGuessingChanged,
 	};
 };
 
