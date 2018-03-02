@@ -41,7 +41,7 @@ export class BaseClueView extends Component {
 
 	onWordChange(e) {
 		const word = e.target.value;
-		this.setState(() => ({ word }));
+		this.setState(() => ({ word: word && word.replace(/\s/g, '').toUpperCase() }));
 	}
 
 	onNumberChange(e) {
@@ -59,7 +59,7 @@ export class BaseClueView extends Component {
 	}
 
 	maybeRenderClue() {
-		if (!this.props.playerId && !(this.props.clue && this.props.clue.word) && this.props.turnsLeft > 0) {
+		if (!this.props.clue || !this.props.clue.word || this.props.turnsLeft < 1) {
 			return null;
 		}
 

@@ -32,6 +32,7 @@ export class BaseContainer extends Component {
 		this.props.enterGame({ gameId });
 
 		enableNotifications();
+		document.title = gameId;
 	}
 
 	render() {

@@ -2,13 +2,14 @@ import { createAction, createReducer } from 'redux-act';
 import { endTurn as submitEndTurn, giveClue as submitGiveClue } from '../fetchers';
 import { getPlayerId } from './player-id-store';
 import { getGameId } from './game-store';
+import { AGENTS_PER_PLAYER } from '../rules/game';
 
 export const updateTurnsLeft = createAction('Update remaining turns left in the game');
 export const updateClue = createAction('Update the current clue and player giving clue');
 export const updateGuessesLeft = createAction('Update the current guesses left for the clue');
 
 const INITIAL_STATE = {
-	turnsLeft: 9,
+	turnsLeft: AGENTS_PER_PLAYER,
 	wordsGuessedThisTurn: [],
 };
 
