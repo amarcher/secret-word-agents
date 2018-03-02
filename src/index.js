@@ -303,6 +303,16 @@ function sendWholeGameState(ws, gameId) {
 
 // ROUTES
 
+app.use(function(req, res, next) {
+	const protocol = req.get('X-Forwarded-Proto');
+	const host = req.get('Host');
+	if (protocol !== 'https' && host && host.indexOf('localhost') === -1) {
+		res.redirect('https://' + req.get('Host') + req.url);
+	} else {
+		next();
+	}
+});
+
 app.get('*\.(gif|png|jpe?g|svg|ico)', express.static('public/img'));
 
 app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU', function(req, res) {
