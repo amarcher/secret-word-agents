@@ -1,6 +1,8 @@
 import { createAction, createReducer } from 'redux-act';
 import { fetchGame, guess, startNewGame } from '../fetchers';
 import { updateTurnsLeft } from './turns-store';
+import { TOTAL_AGENTS } from '../rules/game';
+import { isAgent } from '../rules/words';
 
 export const addOrReplaceGame = createAction('Add or replace game');
 export const updateWordInGame = createAction('Update roleRevealedForClueGiver for a word in a game');
@@ -47,6 +49,11 @@ const reducer = createReducer({
 // Selectors
 export const getGame = state => state && state.game;
 export const getGameId = state => state && state.game && state.game.gameId;
+export const getAgentsLeft = state => (
+	state && state.game && state.game.words && Object.values(state.game.words).reduce((count, word) => (
+		isAgent(word) ? count - 1 : count
+	), TOTAL_AGENTS)
+);
 
 // Thunks
 export function enterGame({ gameId }) {

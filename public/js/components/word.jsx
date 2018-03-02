@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import { isAgent, isAssasin, isGuessed } from '../rules/words';
 
 import { makeGuess } from '../stores/game-store';
 import { getPlayerId } from '../stores/player-id-store';
@@ -24,20 +25,6 @@ const defaultProps = {
 	guessedThisTurn: false,
 };
 
-function isAgent(revealed) {
-	return [revealed.playerOne, revealed.playerTwo].indexOf('AGENT') > -1;
-}
-
-function isAssasin(revealed) {
-	return [revealed.playerOne, revealed.playerTwo].indexOf('ASSASIN') > -1;
-}
-
-function isGuessed(playerId, revealed) {
-	return isAgent(revealed) || isAssasin(revealed) ||
-		(playerId === 'one' && revealed.playerTwo) ||
-		(playerId === 'two' && revealed.playerOne);
-}
-
 export class BaseWord extends Component {
 	constructor(props) {
 		super(props);
@@ -52,7 +39,7 @@ export class BaseWord extends Component {
 			word, revealed, role, playerId,
 		} = this.props;
 
-		if (role && !isGuessed(playerId, revealed)) {
+		if (role && !isGuessed(revealed, playerId)) {
 			this.props.makeGuess({ word });
 		}
 	}
@@ -70,13 +57,13 @@ export class BaseWord extends Component {
 			'my-agent': role === 'AGENT',
 			'my-non-agent': role === 'NON_AGENT',
 			'my-assasin': role === 'ASSASIN',
-			guessed: isGuessed(playerId, revealed),
+			guessed: isGuessed(revealed, playerId),
 			neutral: !role,
 			'guessed-this-turn': guessedThisTurn,
 		});
 
 		return (
-			<button type="button" className={className} onClick={this.onClick} disabled={!role || isGuessed(playerId, revealed)}>
+			<button type="button" className={className} onClick={this.onClick} disabled={!role || isGuessed(revealed, playerId)}>
 				{word}
 			</button>
 		);
