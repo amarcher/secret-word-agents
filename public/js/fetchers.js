@@ -1,7 +1,10 @@
-import { start, send } from './utils/ws';
+import { send } from './utils/ws';
 
 export function fetchGame({ gameId } = {}) {
-	start(gameId);
+	send({
+		type: 'words',
+		gameId,
+	});
 }
 
 export function guess({ gameId, word, player } = {}) {
