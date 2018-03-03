@@ -3,9 +3,9 @@ import { routerReducer, routerMiddleware } from 'react-router-redux';
 import thunkMiddleware from 'redux-thunk';
 import createHistory from 'history/createBrowserHistory';
 
-import gameReducer, { addOrReplaceGame, updateWordInGame } from './game-store';
+import gameReducer, { enterGame, getGameId, addOrReplaceGame, updateWordInGame } from './game-store';
 import playersReducer, { updatePlayerCount } from './players-store';
-import playerIdReducer, { setPlayerId } from './player-id-store';
+import playerIdReducer, { getPlayerId, setPlayerId, changePlayerId } from './player-id-store';
 import turnsReducer, { updateTurnsLeft, updateClue, updateGuessesLeft } from './turns-store';
 import { sendNotification } from '../utils/notifications';
 
@@ -48,6 +48,18 @@ export function wsEvent(data) {
 	default:
 		return null;
 	}
+}
+
+export function wsConnected() {
+	const state = store.getState();
+	const playerId = getPlayerId(state);
+	const gameId = getGameId(state);
+
+	if (playerId) {
+		return store.dispatch(changePlayerId({ playerId }));
+	}
+
+	return store.dispatch(enterGame({ gameId }));
 }
 
 export default store;

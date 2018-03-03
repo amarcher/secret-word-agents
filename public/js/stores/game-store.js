@@ -57,7 +57,12 @@ export const getAgentsLeft = state => (
 
 // Thunks
 export function enterGame({ gameId }) {
-	return () => fetchGame({ gameId });
+	return (dispatch) => {
+		// replace the game with an dummy game (just an id)
+		// until we have a full game object from web socket
+		dispatch(addOrReplaceGame({ gameId }));
+		return fetchGame({ gameId });
+	};
 }
 
 export function makeGuess({ word }) {
