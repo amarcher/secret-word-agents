@@ -104,6 +104,7 @@ function handleRequest(ws, data) {
 				games[gameId] = new Game();
 
 				sockets[gameId].forEach(function(ws) {
+					game.setPlayerName(ws._playerName, ws._player);
 					sendWholeGameState(ws, gameId);
 				});
 			}
@@ -122,11 +123,11 @@ function handlePlayerLeft(ws) {
 		payload: {
 			count: sockets[ws._gameId].size,
 			playerName: ws._playerName,
-		}
+		},
 	});
 
 	// Make the player's slot available again
-	getOrCreateGame(ws._gameId).setPlayerName('', ws._player)
+	getOrCreateGame(ws._gameId).setPlayerName('', ws._player);
 
 	ws._gameId = undefined;
 	ws._player = undefined;
@@ -181,6 +182,8 @@ function handlePlayerJoined(ws, gameId, playerName) {
 }
 
 function handlePlayerChanged(ws, player, playerName) {
+	if (ws._playerName === playerName && player === ws._player) return;
+
 	if (typeof playerName !== 'undefined') {
 		broadcast(ws._gameId, {
 			type: 'playerLeft',
@@ -320,7 +323,7 @@ function makeGuess(gameId, word, player) {
 		payload: Object.assign({}, guess, { gameId: gameId }),
 	});
 
-	if ((!guess.playerGuessingChanged && turnsLeftBefore !== turnsLeftAfter) ||
+	if ((guess && !guess.playerGuessingChanged && turnsLeftBefore !== turnsLeftAfter) ||
 		turnsLeftBefore - 1 > turnsLeftAfter) {
 		broadcast(gameId, {
 			type: 'turns',

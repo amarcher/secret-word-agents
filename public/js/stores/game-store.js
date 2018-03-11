@@ -1,6 +1,7 @@
 import { createAction, createReducer } from 'redux-act';
 import { fetchGame, guess, startNewGame } from '../fetchers';
 import { updateTurnsLeft } from './turns-store';
+import { getPlayerId } from './player-id-store';
 import { TOTAL_AGENTS } from '../rules/game';
 import { isAgent } from '../rules/words';
 
@@ -67,8 +68,9 @@ export function enterGame({ gameId, playerName }) {
 
 export function makeGuess({ word }) {
 	return (dispatch, getState) => {
-		const { gameId } = getState().game;
-		const { playerId } = getState();
+		const state = getState();
+		const gameId = getGameId(state);
+		const playerId = getPlayerId(state);
 		return guess({ gameId, word, player: playerId });
 	};
 }

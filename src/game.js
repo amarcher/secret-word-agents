@@ -243,6 +243,15 @@ Game.prototype.setPlayerName = function(name, playerId) {
 		if (playerId === 'one') this.playerOne.name = '';
 		if (playerId === 'two') this.playerTwo.name = '';
 		return '';
+	} else if (name && playerId) {
+		if (playerId === 'one' && !this.playerOne) {
+			this.playerOne.name = name;
+			return 'one';
+		} else if (playerId === 'two' && !this.playerTwo) {
+			this.playerTwo.name = name;
+			return 'two';
+		}
+		return '';
 	}
 
 	// both player slots are taken
