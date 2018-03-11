@@ -2,42 +2,83 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
-import { changePlayerId, getPlayerId } from '../stores/player-id-store';
-
-const PLAYERS = {
-	ONE: 'one',
-	TWO: 'two',
-	NEUTRAL: '',
-};
+import { changePlayerId, getPlayerId, getPlayerName, setPlayerName } from '../stores/player-id-store';
 
 const propTypes = {
 	changePlayerId: PropTypes.func.isRequired,
+	setPlayerName: PropTypes.func.isRequired,
 	playerId: PropTypes.string,
+	playerName: PropTypes.string,
 };
 
 const defaultProps = {
-	playerId: PLAYERS.NEUTRAL,
+	playerId: '',
+	playerName: '',
 };
 
 export class BasePlayerSelect extends Component {
-	renderButton(playerId) {
-		const text = playerId ? `Be player ${playerId}` : 'Be neutral';
+	constructor(props) {
+		super(props);
 
+		this.state = {
+			playerName: props.playerName,
+		};
+
+		this.onChangePlayer = this.onChangePlayer.bind(this);
+		this.onChangePlayerName = this.onChangePlayerName.bind(this);
+		this.onSubmit = this.onSubmit.bind(this);
+	}
+
+	onChangePlayer() {
+		this.props.setPlayerName({ playerName: '' });
+		this.props.changePlayerId({ playerId: '' });
+	}
+
+	onChangePlayerName(e) {
+		const name = e.target.value;
+		this.setState(() => ({ playerName: name && name.replace(/\s/g, '').toUpperCase() }));
+	}
+
+	onSubmit(e) {
+		e.preventDefault();
+		const { playerId } = this.props;
+		const { playerName } = this.state;
+
+		if (playerName) this.props.setPlayerName({ playerName });
+		this.props.changePlayerId({ playerId });
+	}
+
+	renderBeNeutralButton() {
 		return (
-			<button type="button" onClick={() => this.props.changePlayerId({ playerId })} key={`player${playerId}`}>
-				{text}
+			<button type="button" onClick={this.onChangePlayer}>
+				Be neutral
 			</button>
 		);
 	}
 
+	renderEnterGameButton() {
+		return (
+			<form onSubmit={this.onSubmit}>
+				<div className="player-select-enter-game">
+					<input
+						className="enter-name-input"
+						placeholder="Enter Name To Join"
+						onChange={this.onChangePlayerName}
+						value={this.state.playerName}
+					/>
+				</div>
+			</form>
+		);
+	}
+
 	render() {
-		const buttons = this.props.playerId ? this.renderButton(PLAYERS.NEUTRAL) : [PLAYERS.ONE, PLAYERS.TWO].map(this.renderButton, this);
-		const text = this.props.playerId ? `You are player ${this.props.playerId}` : 'Choose a player';
+		const button = this.props.playerId ? this.renderBeNeutralButton() : this.renderEnterGameButton();
+		const text = this.props.playerId ? `You are ${this.props.playerName}` : 'You are neutral';
 
 		return (
 			<div className="player-select">
 				<div className="player-display">{text}</div>
-				{buttons}
+				{button}
 			</div>
 		);
 	}
@@ -46,11 +87,12 @@ export class BasePlayerSelect extends Component {
 BasePlayerSelect.propTypes = propTypes;
 BasePlayerSelect.defaultProps = defaultProps;
 
-const mapDispatchToProps = { changePlayerId };
+const mapDispatchToProps = { setPlayerName, changePlayerId };
 
 function mapStateToProps(state) {
 	return {
 		playerId: getPlayerId(state),
+		playerName: getPlayerName(state),
 	};
 }
 

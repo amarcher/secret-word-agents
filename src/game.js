@@ -102,6 +102,8 @@ function Game() {
 	this.wordMap = getWordMap();
 	this.agentsLeft = COUNTS.AGENTS;
 	this.turnsLeft = COUNTS.TURNS;
+	this.playerOne = {};
+	this.playerTwo = {};
 }
 
 Game.prototype.giveClueForTurn = function (player, clueWord, guessesLeft) {
@@ -208,7 +210,7 @@ Game.prototype.getWordsOfEntityTypeForPlayer = function (entityType, player) {
 	}, this);
 };
 
-Game.prototype.getWords = function () {
+Game.prototype.getWords = function() {
 	const words = {};
 
 	Object.keys(this.wordMap).forEach(function (word) {
@@ -220,7 +222,7 @@ Game.prototype.getWords = function () {
 	return words;
 };
 
-Game.prototype.getViewForPlayer = function (player) {
+Game.prototype.getViewForPlayer = function(player) {
 	if (!player) return this.getWords();
 
 	const words = {};
@@ -235,5 +237,27 @@ Game.prototype.getViewForPlayer = function (player) {
 
 	return words;
 };
+
+Game.prototype.setPlayerName = function(name, playerId) {
+	if (!name) {
+		if (playerId === 'one') this.playerOne.name = '';
+		if (playerId === 'two') this.playerTwo.name = '';
+		return '';
+	}
+
+	// both player slots are taken
+	if (this.playerOne.name && this.playerOne.name !== name && this.playerTwo.name && this.playerTwo.name !== name) return '';
+
+	if (this.playerOne.name === name) return 'one';
+	if (this.playerTwo.name === name) return 'two';
+
+	if (!this.playerOne.name) {
+		this.playerOne.name = name;
+		return 'one';
+	}
+
+	this.playerTwo.name = name;
+	return 'two';
+}
 
 module.exports = Game;
