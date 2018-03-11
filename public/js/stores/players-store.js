@@ -2,6 +2,7 @@ import { createAction, createReducer } from 'redux-act';
 
 export const incrementPlayerCount = createAction('Increment count of players connected to the game');
 export const decrementPlayerCount = createAction('Decrement count of players connected to the game');
+export const clearPlayers = createAction('Remove all players from the game');
 
 const initialState = { count: 0, connectedPlayerNames: [] };
 
@@ -32,6 +33,7 @@ const reducer = createReducer({
 			],
 		};
 	},
+	[clearPlayers]: () => initialState,
 }, initialState);
 
 // Selectors
