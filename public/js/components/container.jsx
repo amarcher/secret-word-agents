@@ -10,10 +10,12 @@ import TurnView from './turn-view';
 import PlayerSelect from './player-select';
 import EndTurn from './end-turn';
 import { enterGame, getGame } from '../stores/game-store';
+import { getPlayerName } from '../stores/player-id-store';
 import { enableNotifications } from '../utils/notifications';
 
 const propTypes = {
 	enterGame: PropTypes.func.isRequired,
+	playerName: PropTypes.string,
 	gameId: PropTypes.string.isRequired,
 	game: PropTypes.shape({
 		gameId: PropTypes.string,
@@ -23,13 +25,14 @@ const propTypes = {
 
 const defaultProps = {
 	game: {},
+	playerName: '',
 };
 
 export class BaseContainer extends Component {
 	componentDidMount() {
-		const { gameId } = this.props;
+		const { gameId, playerName } = this.props;
 
-		this.props.enterGame({ gameId });
+		this.props.enterGame({ gameId, playerName });
 
 		enableNotifications();
 		document.title = gameId;
@@ -69,6 +72,7 @@ function mapStateToProps(state) {
 	return {
 		game: getGame(state),
 		gameId,
+		playerName: getPlayerName(state),
 	};
 }
 

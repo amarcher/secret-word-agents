@@ -93,6 +93,16 @@
 	background-size: contain;
 	height: 24px;
 	width: 24px;
+	margin-left: 6px;
+	position: relative;
+	display: flex;
+	justify-content: center;
+}
+
+.player-name {
+	font-size: 7px;
+	position: absolute;
+	bottom: -10px;
 }
 
 .player-info,
@@ -116,6 +126,10 @@
 	line-height: 1.5;
 }
 
+.player-select-enter-game {
+	display: flex;
+}
+
 .title {
 	font-size: 48px;
 	line-height: 72px;
@@ -133,9 +147,11 @@
 	user-select: none;
 }
 
-.enter-game-input {
+.enter-game-input,
+.enter-name-input {
 	margin: 12px;
 	text-align: center;
+	display: block;
 }
 
 .enter-game-button {

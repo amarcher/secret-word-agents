@@ -1,4 +1,5 @@
 const path = require('path');
+const CircularDependencyPlugin = require('circular-dependency-plugin');
 
 module.exports = {
 	entry: './public/js/main.jsx',
@@ -18,5 +19,15 @@ module.exports = {
 	},
 	resolve: {
 		extensions: ['.js', '.jsx'],
-	}
+	},
+	plugins: [
+		new CircularDependencyPlugin({
+			// exclude detection of files based on a RegExp
+			exclude: /node_modules/,
+			// add errors to webpack instead of warnings
+			failOnError: false,
+			// set the current working directory for displaying module paths
+			cwd: process.cwd(),
+		})
+	]
 };

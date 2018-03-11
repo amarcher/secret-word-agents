@@ -1,9 +1,10 @@
 import { send } from './utils/ws';
 
-export function fetchGame({ gameId } = {}) {
+export function fetchGame({ gameId, playerName } = {}) {
 	send({
 		type: 'words',
 		gameId,
+		payload: { playerName },
 	});
 }
 
@@ -15,11 +16,11 @@ export function guess({ gameId, word, player } = {}) {
 	});
 }
 
-export function changePlayer({ gameId, player }) {
+export function changePlayer({ gameId, player, playerName }) {
 	send({
 		gameId,
 		type: 'changePlayer',
-		payload: { player },
+		payload: { player, playerName },
 	});
 }
 
@@ -27,6 +28,7 @@ export function endTurn({ gameId } = {}) {
 	send({
 		gameId,
 		type: 'endTurn',
+		payload: {},
 	});
 }
 
@@ -46,5 +48,6 @@ export function startNewGame({
 	send({
 		gameId,
 		type: 'startNewGame',
+		payload: {},
 	});
 }

@@ -1,4 +1,5 @@
-import { wsEvent, wsConnected } from '../stores';
+let wsEvent = () => {};
+let wsConnected = () => {};
 
 let connectingPromise;
 let ws;
@@ -88,4 +89,9 @@ export function start() {
 	});
 
 	return connectingPromise;
+}
+
+export function addCallbacks({ onWsEvent, onWsConnected }) {
+	wsEvent = onWsEvent;
+	wsConnected = onWsConnected;
 }
