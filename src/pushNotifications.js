@@ -10,9 +10,6 @@ class NotificationService {
 					teamId: 'JRYHCAHRHF',
 				},
 			},
-			gcm: {
-				id: null,
-			},
 		};
 
 		this.push = new PushNotifications(this.config);
@@ -23,7 +20,13 @@ class NotificationService {
 		if (!registrationIds || !registrationIds.length) return;
 		console.log('sending iOS notification', registrationIds);
 
-		this.push.send(registrationIds, data);
+		this.push.send(registrationIds, data, (err, result) => {
+			if (err) {
+				console.log(err);
+			} else {
+			        console.log(result);
+			}
+		});
 	}
 }
 
