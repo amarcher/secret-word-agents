@@ -1,4 +1,5 @@
 const Game = require('./game');
+const iosNotificationService = require('./pushNotifications');
 const express = require('express');
 const bodyParser = require('body-parser');
 const WebSocketServer = require('ws').Server;
@@ -73,45 +74,46 @@ function handleRequest(ws, data) {
 	if (!gameId) return;
 
 	if (ws._gameId && ws._gameId !== gameId && sockets[ws._gameId]) {
- 		// player has joined a different game, so we boot them from their existing game
- 		handlePlayerLeft(ws);
+		// player has joined a different game, so we boot them from their existing game
+		handlePlayerLeft(ws);
 	}
 
 	if (!sockets[gameId] || !sockets[gameId].has(ws)) {
 		// player has entered game they were not in before
-		handlePlayerJoined(ws, gameId, payload.playerName);
+		handlePlayerJoined(ws, gameId, payload.playerName, payload.token);
 	}
 
 	switch(type) {
-		case 'words':
-			sendWholeGameState(ws, gameId);
-			break;
-		case 'guess':
-			makeGuess(gameId, payload.word, payload.player);
-			break;
-		case 'changePlayer':
-			handlePlayerChanged(ws, payload.player, payload.playerName);
-			break;
-		case 'giveClue':
-			giveClue(gameId, payload.player, payload.word, payload.number);
-			break;
-		case 'endTurn':
-			endTurn(gameId);
-			break;
-		case 'startNewGame':
-			const game = getOrCreateGame(gameId);
-			if (game && game.getTurnsLeft() < 1) {
-				games[gameId] = new Game();
+	case 'words':
+		sendWholeGameState(ws, gameId);
+		break;
+	case 'guess':
+		makeGuess(gameId, payload.word, payload.player);
+		break;
+	case 'changePlayer':
+		handlePlayerChanged(ws, payload.player, payload.playerName, payload.token);
+		break;
+	case 'giveClue':
+		giveClue(gameId, payload.player, payload.word, payload.number);
+		break;
+	case 'endTurn':
+		endTurn(gameId);
+		break;
+	case 'startNewGame':
+		const game = getOrCreateGame(gameId);
 
-				sockets[gameId].forEach(function(ws) {
-					game.setPlayerName(ws._playerName, ws._player);
-					sendWholeGameState(ws, gameId);
-				});
-			}
+		if (game && game.getTurnsLeft() < 1) {
+			games[gameId] = new Game();
 
-			break;
-		default:
-			break;
+			sockets[gameId].forEach(function(ws) {
+				game.setPlayerName(ws._playerName, ws._player);
+				sendWholeGameState(ws, gameId);
+			});
+		}
+
+		break;
+	default:
+		break;
 	}
 }
 
@@ -126,15 +128,17 @@ function handlePlayerLeft(ws) {
 		},
 	});
 
-	// Make the player's slot available again
-	getOrCreateGame(ws._gameId).setPlayerName('', ws._player);
+	// Make the player's slot available again, unless we have a token!
+	if (!getOrCreateGame(ws._gameId).getTokenForPlayer(ws._player)) {
+		getOrCreateGame(ws._gameId).setPlayerName('', ws._player);
+	}
 
 	ws._gameId = undefined;
 	ws._player = undefined;
 	ws._playerName = undefined;
 }
 
-function handlePlayerJoined(ws, gameId, playerName) {
+function handlePlayerJoined(ws, gameId, playerName, token) {
 	if (sockets[gameId]) {
 		// Tell the client who else is connected
 		sockets[gameId].forEach(function(client) {
@@ -158,7 +162,7 @@ function handlePlayerJoined(ws, gameId, playerName) {
 	ws._gameId = gameId;
 	ws._playerName = playerName;
 
-	const player = getOrCreateGame(gameId).setPlayerName(playerName);
+	const player = getOrCreateGame(gameId).setPlayerName(playerName, undefined, token);
 
 	broadcast(gameId, {
 		type: 'playerJoined',
@@ -181,7 +185,7 @@ function handlePlayerJoined(ws, gameId, playerName) {
 	}
 }
 
-function handlePlayerChanged(ws, player, playerName) {
+function handlePlayerChanged(ws, player, playerName, token) {
 	if (ws._playerName === playerName && player === ws._player) return;
 
 	if (typeof playerName !== 'undefined') {
@@ -194,7 +198,7 @@ function handlePlayerChanged(ws, player, playerName) {
 		});
 
 		const game = getOrCreateGame(ws._gameId);
-		player = game.setPlayerName(playerName, ws._player);
+		player = game.setPlayerName(playerName, ws._player, token);
 
 		ws._playerName = playerName;
 
@@ -241,16 +245,24 @@ function broadcast(gameId, data) {
 	}
 };
 
+function iOSNotify(gameId, playerId, data) {
+	const dataToSend = Object.assign({}, data, {
+		topic: 'org.reactjs.native.example.Dooler',
+	});
+
+	const game = getOrCreateGame(gameId);
+	const registrationIds = playerId ?
+		game.getTokenForPlayer(playerId) :
+		[game.getTokenForPlayer('one'), game.getTokenForPlayer('two')].filter(token => !!token);
+
+	iosNotificationService.send(registrationIds, dataToSend);
+}
+
 
 // GAME DATA
 
 const games = {};
 const sockets = {};
-const DEFAULT_GAME_ID = 'AAAA';
-const PLAYERS = {
-	one: 'playerOne',
-	two: 'playerTwo',
-};
 
 function getOrCreateGame(hash) {
 	if (games[hash]) {
@@ -281,7 +293,7 @@ function giveClue(gameId, player, word, number) {
 			playerGivingClue: clue.playerGivingClue,
 			number: clue.guessesLeft,
 			word: clue.clueWord,
-		}
+		},
 	});
 }
 
@@ -307,6 +319,7 @@ function getWordsForPlayer(gameId, player) {
 function makeGuess(gameId, word, player) {
 	const game = getOrCreateGame(gameId);
 
+	const clueWord = game.currentTurn && game.currentTurn.clueWord;
 	const turnsLeftBefore = game.getTurnsLeft();
 	const guess = game.guess(word, player);
 	const turnsLeftAfter = game.getTurnsLeft();
@@ -321,6 +334,11 @@ function makeGuess(gameId, word, player) {
 	broadcast(gameId, {
 		type: 'guess',
 		payload: Object.assign({}, guess, { gameId: gameId }),
+	});
+
+	iOSNotify(gameId, player, {
+		title: 'A guess has been made in your game',
+		body: `${game.getPlayerName(player)} guessed "${word}" for the clue "${clueWord}"`,
 	});
 
 	if ((guess && !guess.playerGuessingChanged && turnsLeftBefore !== turnsLeftAfter) ||

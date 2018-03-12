@@ -238,35 +238,66 @@ Game.prototype.getViewForPlayer = function(player) {
 	return words;
 };
 
-Game.prototype.setPlayerName = function(name, playerId) {
+Game.prototype.setPlayerName = function(name, playerId, token) {
 	if (!name) {
-		if (playerId === 'one') this.playerOne.name = '';
-		if (playerId === 'two') this.playerTwo.name = '';
+		if (playerId === 'one') {
+			this.playerOne.name = '';
+			this.playerOne.token = undefined;
+		}
+
+		if (playerId === 'two') {
+			this.playerTwo.name = '';
+			this.playerTwo.token = undefined;
+		}
+
 		return '';
 	} else if (name && playerId) {
-		if (playerId === 'one' && !this.playerOne) {
+		if (playerId === 'one' && !this.playerOne.name) {
 			this.playerOne.name = name;
+			if (token) this.playerOne.token = token;
 			return 'one';
-		} else if (playerId === 'two' && !this.playerTwo) {
+		} else if (playerId === 'two' && !this.playerTwo.name) {
 			this.playerTwo.name = name;
+			if (token) this.playerTwo.token = token;
 			return 'two';
 		}
+
 		return '';
 	}
 
 	// both player slots are taken
 	if (this.playerOne.name && this.playerOne.name !== name && this.playerTwo.name && this.playerTwo.name !== name) return '';
 
-	if (this.playerOne.name === name) return 'one';
-	if (this.playerTwo.name === name) return 'two';
+	if (this.playerOne.name === name) {
+		if (token) this.playerOne.token = token;
+		return 'one';
+	}
+
+	if (this.playerTwo.name === name) {
+		if (token) this.playerTwo.token = token;
+		return 'two';
+	}
 
 	if (!this.playerOne.name) {
 		this.playerOne.name = name;
+		if (token) this.playerOne.token = token;
 		return 'one';
 	}
 
 	this.playerTwo.name = name;
+	if (token) this.playerTwo.token = token;
 	return 'two';
-}
+};
+
+Game.prototype.getPlayerName = function(playerId) {
+	if (playerId === 'one') return this.playerOne.name;
+	if (playerId === 'two') return this.playerTwo.name;
+};
+
+
+Game.prototype.getTokenForPlayer = function(playerId) {
+	if (playerId === 'one') return this.playerOne.token;
+	if (playerId === 'two') return this.playerTwo.token;
+};
 
 module.exports = Game;
