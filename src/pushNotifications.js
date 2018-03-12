@@ -19,6 +19,7 @@ class NotificationService {
 	}
 
 	send(registrationIds, data) {
+		console.log('preparing to send to registrationIds', registrationIds, data);
 		if (!registrationIds || !registrationIds.length) return;
 		console.log('sending iOS notification', registrationIds);
 

@@ -336,7 +336,9 @@ function makeGuess(gameId, word, player) {
 		payload: Object.assign({}, guess, { gameId: gameId }),
 	});
 
-	iOSNotify(gameId, player, {
+	const otherPlayer = player === 'one' ? 'two' : 'one';
+
+	iOSNotify(gameId, otherPlayer, {
 		title: 'A guess has been made in your game',
 		body: `${game.getPlayerName(player)} guessed "${word}" for the clue "${clueWord}"`,
 	});
