@@ -25,6 +25,7 @@ class NotificationService {
 				console.log(err, err.message);
 			} else {
 			        console.log(result);
+			        console.log(result.message);
 			}
 		});
 	}
