@@ -22,7 +22,7 @@ class NotificationService {
 
 		this.push.send(registrationIds, data, (err, result) => {
 			if (err) {
-				console.log(err);
+				console.log(err, err.message);
 			} else {
 			        console.log(result);
 			}
