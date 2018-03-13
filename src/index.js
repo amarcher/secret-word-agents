@@ -1,5 +1,7 @@
+/* eslint-disable no-console, no-use-before-define, no-param-reassign */
+
 const Game = require('./game');
-const iosNotificationService = require('./pushNotifications');
+const iosNotificationService = require('./push-notifications');
 const express = require('express');
 const bodyParser = require('body-parser');
 const WebSocketServer = require('ws').Server;
@@ -13,20 +15,29 @@ app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// GAME DATA
+
+const games = {};
+const sockets = {};
+
+
 // START SERVER
 
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server: server, clientTracking: true });
-server.listen(port, function() {
-	console.log('Server with web socket capabilities listening on port ' + port);
+const wss = new WebSocketServer({ server, clientTracking: true });
+server.listen(port, () => {
+	console.log(`Server with web socket capabilities listening on port ${port}`);
 });
 
 
 // Ping all active clients every thirty seconds
-const noop = function() {};
-const interval = setInterval(function ping() {
-	wss.clients.forEach(function each(ws) {
-		if (ws.isAlive === false) return ws.terminate();
+const noop = () => {};
+setInterval(() => {
+	wss.clients.forEach((ws) => {
+		if (ws.isAlive === false) {
+			ws.terminate();
+			return;
+		}
 
 		ws.isAlive = false;
 		ws.ping(noop);
@@ -36,44 +47,40 @@ const interval = setInterval(function ping() {
 
 // HANDLE INCOMING CONNECTIONS
 
-wss.on('connection', function(ws) {
+wss.on('connection', (ws) => {
 	ws.isAlive = true;
- 	console.log('new websocket connection open');
+	console.log('new websocket connection open');
+	console.log(`we now have ${wss.clients.size} total clients`);
 
- 	// TODO: Remove this counting
- 	console.log('we now have ' + wss.clients.size + ' total clients');
-
-	ws.on('pong', function() {
+	ws.on('pong', () => {
 		ws.isAlive = true;
 	});
 
- 	ws.on('message', function(data) {
- 		const parsedData = JSON.parse(data);
-	 	console.log('websocket message', parsedData);
-	 	handleRequest(ws, parsedData);
- 	});
+	ws.on('message', (data) => {
+		const parsedData = JSON.parse(data);
+		console.log(`websocket message: ${data}`);
+		handleRequest(ws, parsedData); // eslint-disable-line no-use-before-define
+	});
 
- 	ws.on('close', function(info) {
-		console.log('websocket connection close')
- 		if (ws._gameId && sockets[ws._gameId]) {
- 			handlePlayerLeft(ws);
- 		}
- 	});
+	ws.on('close', (info) => {
+		console.log(`websocket connection closed with reason: ${info && JSON.stringify(info)}`);
+		console.log(`we now have ${wss.clients.size} total clients`);
+		if (ws.gameId && sockets[ws.gameId]) {
+			handlePlayerLeft(ws);
+		}
+	});
 
- 	ws.on('error', function(info) {
- 		// NOTE: Unhandled errors cause the app to crash... So we need this!
-		console.log('websocket error', info.message);
+	ws.on('error', (info) => {
+		// NOTE: Unhandled errors cause the app to crash... So we need this!
+		console.log('websocket error', info && info.message);
 	});
 });
 
 function handleRequest(ws, data) {
-	const gameId = data.gameId;
-	const type = data.type;
-	const payload = data.payload || {};
-
+	const { gameId, type, payload = {} } = data;
 	if (!gameId) return;
 
-	if (ws._gameId && ws._gameId !== gameId && sockets[ws._gameId]) {
+	if (ws.gameId && ws.gameId !== gameId && sockets[ws.gameId]) {
 		// player has joined a different game, so we boot them from their existing game
 		handlePlayerLeft(ws);
 	}
@@ -83,7 +90,10 @@ function handleRequest(ws, data) {
 		handlePlayerJoined(ws, gameId, payload.playerName, payload.token);
 	}
 
-	switch(type) {
+	const game = getOrCreateGame(gameId);
+	const token = game.getTokenForPlayer(ws.player);
+
+	switch (type) {
 	case 'words':
 		sendWholeGameState(ws, gameId);
 		break;
@@ -100,17 +110,11 @@ function handleRequest(ws, data) {
 		endTurn(gameId);
 		break;
 	case 'startNewGame':
-		const game = getOrCreateGame(gameId);
-		const token = game.getTokenForPlayer(ws._player);
-
-		if (game && game.getTurnsLeft() < 1) {
-			games[gameId] = new Game();
-
-			sockets[gameId].forEach(function(ws) {
-				game.setPlayerName(ws._playerName, ws._player, token);
-				sendWholeGameState(ws, gameId);
-			});
-		}
+		games[gameId] = new Game();
+		sockets[gameId].forEach((client) => {
+			game.setPlayerName(client.playerName, client.player, token);
+			sendWholeGameState(client, gameId);
+		});
 
 		break;
 	default:
@@ -119,37 +123,37 @@ function handleRequest(ws, data) {
 }
 
 function handlePlayerLeft(ws) {
-	sockets[ws._gameId].delete(ws);
+	sockets[ws.gameId].delete(ws);
 
-	broadcast(ws._gameId, {
+	broadcast(ws.gameId, {
 		type: 'playerLeft',
 		payload: {
-			count: sockets[ws._gameId].size,
-			playerName: ws._playerName,
+			count: sockets[ws.gameId].size,
+			playerName: ws.playerName,
 		},
 	});
 
 	// Make the player's slot available again, unless we have a token!
-	if (!getOrCreateGame(ws._gameId).getTokenForPlayer(ws._player)) {
-		getOrCreateGame(ws._gameId).setPlayerName('', ws._player);
+	if (!getOrCreateGame(ws.gameId).getTokenForPlayer(ws.player)) {
+		getOrCreateGame(ws.gameId).setPlayerName('', ws.player);
 	}
 
-	ws._gameId = undefined;
-	ws._player = undefined;
-	ws._playerName = undefined;
+	ws.gameId = undefined;
+	ws.player = undefined;
+	ws.playerName = undefined;
 }
 
 function handlePlayerJoined(ws, gameId, playerName, token) {
 	if (sockets[gameId]) {
 		// Tell the client who else is connected
-		sockets[gameId].forEach(function(client) {
+		sockets[gameId].forEach((client) => {
 			if (client.readyState === 1) {
 				send(ws, {
 					type: 'playerJoined',
 					payload: {
 						count: sockets[gameId].size,
-						playerName: client._playerName,
-						player: client._player,
+						playerName: client.playerName,
+						player: client.player,
 					},
 				});
 			}
@@ -160,8 +164,8 @@ function handlePlayerJoined(ws, gameId, playerName, token) {
 		sockets[gameId] = new Set([ws]);
 	}
 
-	ws._gameId = gameId;
-	ws._playerName = playerName;
+	ws.gameId = gameId;
+	ws.playerName = playerName;
 
 	const player = getOrCreateGame(gameId).setPlayerName(playerName, undefined, token);
 
@@ -174,8 +178,8 @@ function handlePlayerJoined(ws, gameId, playerName, token) {
 		},
 	});
 
-	if (ws._player !== player) {
-		ws._player = player;
+	if (ws.player !== player) {
+		ws.player = player;
 
 		send(ws, {
 			type: 'playerChanged',
@@ -187,45 +191,45 @@ function handlePlayerJoined(ws, gameId, playerName, token) {
 }
 
 function handlePlayerChanged(ws, player, playerName, token) {
-	if (ws._playerName === playerName && player === ws._player) return;
+	if (ws.playerName === playerName && player === ws.player) return;
 
 	if (typeof playerName !== 'undefined') {
-		broadcast(ws._gameId, {
+		broadcast(ws.gameId, {
 			type: 'playerLeft',
 			payload: {
-				count: sockets[ws._gameId].size,
-				playerName: ws._playerName,
+				count: sockets[ws.gameId].size,
+				playerName: ws.playerName,
 			},
 		});
 
-		const game = getOrCreateGame(ws._gameId);
-		player = game.setPlayerName(playerName, ws._player, token);
+		const game = getOrCreateGame(ws.gameId);
+		player = game.setPlayerName(playerName, ws.player, token);
 
-		ws._playerName = playerName;
+		ws.playerName = playerName;
 
-		broadcast(ws._gameId, {
+		broadcast(ws.gameId, {
 			type: 'playerJoined',
 			payload: {
-				count: sockets[ws._gameId].size,
-				playerName: ws._playerName,
+				count: sockets[ws.gameId].size,
+				playerName: ws.playerName,
 			},
 		});
 	}
 
-	ws._player = player;
+	ws.player = player;
 
 	send(ws, {
 		type: 'playerChanged',
 		payload: {
-			player: player,
+			player,
 		},
 	});
 
 	send(ws, {
 		type: 'words',
 		payload: {
-			gameId: ws._gameId,
-			words: getWordsForPlayer(ws._gameId, ws._player),
+			gameId: ws.gameId,
+			words: getWordsForPlayer(ws.gameId, ws.player),
 		},
 	});
 }
@@ -234,17 +238,17 @@ function send(client, data) {
 	if (client.readyState === 1) {
 		client.send(JSON.stringify(data));
 	}
-};
+}
 
 function broadcast(gameId, data) {
 	if (sockets[gameId]) {
-		sockets[gameId].forEach(function(client) {
+		sockets[gameId].forEach((client) => {
 			if (client.readyState === 1) {
 				client.send(JSON.stringify(data));
 			}
 		});
 	}
-};
+}
 
 function iOSNotify(gameId, playerId, data) {
 	const dataToSend = Object.assign({}, data, {
@@ -258,12 +262,6 @@ function iOSNotify(gameId, playerId, data) {
 
 	iosNotificationService.send(registrationIds, dataToSend);
 }
-
-
-// GAME DATA
-
-const games = {};
-const sockets = {};
 
 function getOrCreateGame(hash) {
 	if (games[hash]) {
@@ -340,13 +338,14 @@ function makeGuess(gameId, word, player) {
 
 	broadcast(gameId, {
 		type: 'guess',
-		payload: Object.assign({}, guess, { gameId: gameId }),
+		payload: Object.assign({}, guess, { gameId }),
 	});
 
 	const otherPlayer = player === 'one' ? 'two' : 'one';
+	const clueText = clueWord ? ` for the clue "${clueWord}"` : '';
 	iOSNotify(gameId, otherPlayer, {
 		title: 'A guess has been made in your game',
-		body: `${game.getPlayerName(player)} guessed "${word}" for the clue "${clueWord}"`,
+		body: `${game.getPlayerName(player)} guessed "${word}"${clueText}`,
 	});
 
 	if ((guess && !guess.playerGuessingChanged && turnsLeftBefore !== turnsLeftAfter) ||
@@ -378,8 +377,8 @@ function sendWholeGameState(ws, gameId) {
 	send(ws, {
 		type: 'words',
 		payload: {
-			gameId: gameId,
-			words: getWordsForPlayer(gameId, ws._player),
+			gameId,
+			words: getWordsForPlayer(gameId, ws.player),
 		},
 	});
 	send(ws, {
@@ -391,20 +390,20 @@ function sendWholeGameState(ws, gameId) {
 
 // ROUTES
 
-app.use(function(req, res, next) {
+app.use((req, res, next) => {
 	const protocol = req.get('X-Forwarded-Proto');
 	const host = req.get('Host');
 	if (protocol !== 'https' && host && host.indexOf('localhost') === -1) {
-		res.redirect('https://' + req.get('Host') + req.url);
+		res.redirect(`https://${req.get('Host')}${req.url}`);
 	} else {
 		next();
 	}
 });
 
-app.get('*\.(gif|png|jpe?g|svg|ico|app|ipa|plist)', express.static('public/img'));
+app.get('*.(gif|png|jpe?g|svg|ico|app|ipa|plist)', express.static('public/img'));
 
-app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU', function(req, res) {
-	res.send('xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU.wcyPaoYEfPqL-uVIHthYuQAf46zGDhI2Dt6L-aP4veQ')
+app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU', (req, res) => {
+	res.send('xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU.wcyPaoYEfPqL-uVIHthYuQAf46zGDhI2Dt6L-aP4veQ');
 });
 
 app.all('*', (req, res) => {
