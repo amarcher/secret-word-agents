@@ -288,6 +288,12 @@ function giveClue(gameId, player, word, number) {
 		});
 	}
 
+	const otherPlayer = player === 'one' ? 'two' : 'one';
+	iOSNotify(gameId, otherPlayer, {
+		title: 'A clue has been given in your game',
+		body: `${game.getPlayerName(player)} gave the clue "${word}" - ${number}`,
+	});
+
 	broadcast(gameId, {
 		type: 'clueGiven',
 		payload: {
@@ -338,7 +344,6 @@ function makeGuess(gameId, word, player) {
 	});
 
 	const otherPlayer = player === 'one' ? 'two' : 'one';
-
 	iOSNotify(gameId, otherPlayer, {
 		title: 'A guess has been made in your game',
 		body: `${game.getPlayerName(player)} guessed "${word}" for the clue "${clueWord}"`,
