@@ -50,7 +50,7 @@ setInterval(() => {
 wss.on('connection', (ws) => {
 	ws.isAlive = true;
 	console.log('new websocket connection open');
-	console.log(`we now have ${wss.clients.size} total clients`);
+	console.log(`after connection we now have ${wss.clients.size} total clients`);
 
 	ws.on('pong', () => {
 		ws.isAlive = true;
@@ -62,9 +62,9 @@ wss.on('connection', (ws) => {
 		handleRequest(ws, parsedData); // eslint-disable-line no-use-before-define
 	});
 
-	ws.on('close', (info) => {
-		console.log(`websocket connection closed with reason: ${info && JSON.stringify(info)}`);
-		console.log(`we now have ${wss.clients.size} total clients`);
+	ws.on('close', (reasonCode, description) => {
+		console.log(`websocket connection closed with reasonCode: ${reasonCode} and description: ${description}`);
+		console.log(`after disconnect we now have ${wss.clients.size} total clients`);
 		if (ws.gameId && sockets[ws.gameId]) {
 			handlePlayerLeft(ws);
 		}
@@ -90,9 +90,6 @@ function handleRequest(ws, data) {
 		handlePlayerJoined(ws, gameId, payload.playerName, payload.token);
 	}
 
-	const game = getOrCreateGame(gameId);
-	const token = game.getTokenForPlayer(ws.player);
-
 	switch (type) {
 	case 'words':
 		sendWholeGameState(ws, gameId);
@@ -110,16 +107,26 @@ function handleRequest(ws, data) {
 		endTurn(gameId);
 		break;
 	case 'startNewGame':
-		games[gameId] = new Game();
-		sockets[gameId].forEach((client) => {
-			game.setPlayerName(client.playerName, client.player, token);
-			sendWholeGameState(client, gameId);
-		});
-
+		handleStartNewGame(gameId);
 		break;
 	default:
 		break;
 	}
+}
+
+function handleStartNewGame(gameId) {
+	const game = getOrCreateGame(gameId);
+	const playerOne = Object.assign({}, game.playerOne);
+	const playerTwo = Object.assign({}, game.playerTwo);
+
+	games[gameId] = new Game();
+
+	if (playerOne.name) game.setPlayerName(playerOne.name, 'one', playerOne.token);
+	if (playerTwo.name) game.setPlayerName(playerTwo.name, 'two', playerTwo.token);
+
+	sockets[gameId].forEach((client) => {
+		sendWholeGameState(client, gameId);
+	});
 }
 
 function handlePlayerLeft(ws) {
