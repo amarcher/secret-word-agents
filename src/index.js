@@ -101,12 +101,13 @@ function handleRequest(ws, data) {
 		break;
 	case 'startNewGame':
 		const game = getOrCreateGame(gameId);
+		const token = game.getTokenForPlayer(ws._player);
 
 		if (game && game.getTurnsLeft() < 1) {
 			games[gameId] = new Game();
 
 			sockets[gameId].forEach(function(ws) {
-				game.setPlayerName(ws._playerName, ws._player);
+				game.setPlayerName(ws._playerName, ws._player, token);
 				sendWholeGameState(ws, gameId);
 			});
 		}

@@ -68,7 +68,9 @@ export class BaseEnterGame extends Component {
 						</div>
 					</form>
 				</div>
-				<a href="itms-services://?action=download-manifest&url=https://www.dooler.com/manifest.plist">install for ios</a>
+				<div>
+					<a href="itms-services://?action=download-manifest&url=https://www.dooler.com/manifest.plist">Download on iOS</a>
+				</div>
 			</div>
 		);
 	}
