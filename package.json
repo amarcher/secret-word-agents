@@ -31,6 +31,7 @@
     "find-parent": "^2.0.2",
     "history": "^4.7.2",
     "http": "0.0.0",
+    "node-pushnotifications": "^1.0.18",
     "prop-types": "^15.6.0",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",

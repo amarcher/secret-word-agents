@@ -2,12 +2,16 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
+import { isIOSSafari } from '../utils/helpers';
 import { setPlayerName } from '../stores/player-id-store';
 import { history } from '../stores';
 
 const propTypes = {
 	setPlayerName: PropTypes.func.isRequired,
 };
+
+const IS_IOS_SAFARI = isIOSSafari();
+const IOS_DOWNLOAD_LINK = 'itms-services://?action=download-manifest&url=https://www.dooler.com/manifest.plist';
 
 export class BaseEnterGame extends Component {
 	constructor(props) {
@@ -43,6 +47,18 @@ export class BaseEnterGame extends Component {
 		history.push(`/${gameId}`);
 	}
 
+	renderDownloadOnIOSLink() {
+		if (!IS_IOS_SAFARI) return null;
+
+		return (
+			<div>
+				<a href={IOS_DOWNLOAD_LINK}>
+					Download on iOS
+				</a>
+			</div>
+		);
+	}
+
 	render() {
 		return (
 			<div className="enter-game-container">
@@ -68,6 +84,7 @@ export class BaseEnterGame extends Component {
 						</div>
 					</form>
 				</div>
+				{this.renderDownloadOnIOSLink()}
 			</div>
 		);
 	}
