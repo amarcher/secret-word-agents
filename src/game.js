@@ -1,3 +1,5 @@
+/* eslint-disable no-console, no-use-before-define, no-param-reassign, no-plusplus */
+
 const WORDS = require('./words');
 
 const COUNTS = {
@@ -15,7 +17,7 @@ const ROLES = {
 	NON_AGENT: 'NON_AGENT',
 };
 
-COUNTS.OVERLAPPING_AGENTS = COUNTS.PLAYERS * COUNTS.AGENTS_PER_PLAYER - COUNTS.AGENTS;
+COUNTS.OVERLAPPING_AGENTS = (COUNTS.PLAYERS * COUNTS.AGENTS_PER_PLAYER) - COUNTS.AGENTS;
 
 function shuffle(array) {
 	for (let i = array.length - 1; i > 0; i--) {
@@ -98,206 +100,210 @@ function getWordMap() {
 	return wordMap;
 }
 
-function Game() {
-	this.wordMap = getWordMap();
-	this.agentsLeft = COUNTS.AGENTS;
-	this.turnsLeft = COUNTS.TURNS;
-	this.playerOne = {};
-	this.playerTwo = {};
-}
-
-Game.prototype.giveClueForTurn = function (player, clueWord, guessesLeft) {
-	const playerGivingClue = player === 'one' ? 'playerOne' : 'playerTwo';
-
-	if (this.currentTurn && this.currentTurn.guessesLeft > 0) {
-		console.log(`There were still ${this.currentTurn.guessesLeft} guesses left in the current turn, but we got a new clue`);
-
-		this.turnsLeft -= 1;
+class Game {
+	constructor() {
+		this.wordMap = getWordMap();
+		this.agentsLeft = COUNTS.AGENTS;
+		this.turnsLeft = COUNTS.TURNS;
+		this.playerOne = {};
+		this.playerTwo = {};
 	}
 
-	this.currentTurn = {
-		playerGivingClue,
-		guessesLeft,
-		clueWord,
-	};
+	giveClueForTurn(player, clueWord, guessesLeft) {
+		const playerGivingClue = player === 'one' ? 'playerOne' : 'playerTwo';
 
-	return this.currentTurn;
-};
+		if (this.currentTurn && this.currentTurn.guessesLeft > 0) {
+			console.log(`There were still ${this.currentTurn.guessesLeft} guesses left in the current turn, but we got a new clue`);
 
-Game.prototype.getCurrentClue = function () {
-	if (this.currentTurn && this.currentTurn.guessesLeft > 0) {
+			this.turnsLeft -= 1;
+		}
+
+		this.currentTurn = {
+			playerGivingClue,
+			guessesLeft,
+			clueWord,
+		};
+
 		return this.currentTurn;
 	}
 
-	return null;
-}
-
-Game.prototype.guess = function (word, player) {
-	const square = this.wordMap[word];
-	let playerGivingClue = player === 'one' ? 'playerTwo' : 'playerOne';
-	let playerGuessingChanged = false;
-
-	// Play is proceeding without using input
-	if (!this.currentTurn) {
-		this.currentTurn = {
-			playerGivingClue,
-			guessesLeft: this.agentsLeft,
-			clueWord: '',
-		};
-	} else if (this.currentTurn.playerGivingClue !== playerGivingClue) {
-		this.turnsLeft -= 1;
-
-		this.currentTurn = {
-			playerGivingClue,
-			guessesLeft: this.agentsLeft,
-			clueWord: '',
+	getCurrentClue() {
+		if (this.currentTurn && this.currentTurn.guessesLeft > 0) {
+			return this.currentTurn;
 		}
 
-		playerGuessingChanged = true;
+		return null;
 	}
 
-	const role = square[playerGivingClue];
+	guess(word, player) {
+		const square = this.wordMap[word];
+		const playerGivingClue = player === 'one' ? 'playerTwo' : 'playerOne';
+		let playerGuessingChanged = false;
 
-	if (!square) {
-		console.log(`The word "${word}"" is not on the board.`);
-		return;
-	}
+		// Play is proceeding without using input
+		if (!this.currentTurn) {
+			this.currentTurn = {
+				playerGivingClue,
+				guessesLeft: this.agentsLeft,
+				clueWord: '',
+			};
+		} else if (this.currentTurn.playerGivingClue !== playerGivingClue) {
+			this.turnsLeft -= 1;
 
-	if (square.roleRevealedForClueGiver[playerGivingClue]) {
-		console.log(`The word "${word}" was already revealed to be: ${role} for this clue-giver.`);
-		return;
-	}
+			this.currentTurn = {
+				playerGivingClue,
+				guessesLeft: this.agentsLeft,
+				clueWord: '',
+			};
 
-	square.roleRevealedForClueGiver[playerGivingClue] = role;
-
-	if (role === ROLES.AGENT) {
-		this.agentsLeft--;
-		this.currentTurn.guessesLeft--;
-	}
-
-	if (square[playerGivingClue] === ROLES.NON_AGENT || (square[playerGivingClue] === ROLES.AGENT && this.currentTurn.guessesLeft < 1)) {
-		this.currentTurn = undefined;
-		this.turnsLeft--;
-	}
-
-	if (square[playerGivingClue] === ROLES.ASSASIN) {
-		this.currentTurn = undefined;
-		this.turnsLeft = 0;
-	}
-
-	return {
-		word: word,
-		roleRevealedForClueGiver: square.roleRevealedForClueGiver,
-		guessesLeft: (this.currentTurn && this.currentTurn.guessesLeft) || 0,
-		playerGuessingChanged: playerGuessingChanged,
-	};
-};
-
-Game.prototype.endTurn = function() {
-	if (this.currentTurn) {
-		this.turnsLeft -= 1;
-		this.currentTurn = undefined;
-	}
-}
-
-Game.prototype.getTurnsLeft = function() {
-	return this.turnsLeft;
-}
-
-Game.prototype.getWordsOfEntityTypeForPlayer = function (entityType, player) {
-	return Object.keys(this.wordMap).filter(function (word) {
-		return this.wordMap[word][player] === entityType;
-	}, this);
-};
-
-Game.prototype.getWords = function() {
-	const words = {};
-
-	Object.keys(this.wordMap).forEach(function (word) {
-		words[word] = {
-			roleRevealedForClueGiver: this.wordMap[word].roleRevealedForClueGiver,
-		};
-	}, this);
-
-	return words;
-};
-
-Game.prototype.getViewForPlayer = function(player) {
-	if (!player) return this.getWords();
-
-	const words = {};
-	const playerNumber = player === 'one' ? 'playerOne' : 'playerTwo';
-
-	Object.keys(this.wordMap).forEach(function (word) {
-		words[word] = {
-			role: this.wordMap[word][playerNumber],
-			roleRevealedForClueGiver: this.wordMap[word].roleRevealedForClueGiver,
-		};
-	}, this);
-
-	return words;
-};
-
-Game.prototype.setPlayerName = function(name, playerId, token) {
-	if (!name) {
-		if (playerId === 'one') {
-			this.playerOne.name = '';
-			this.playerOne.token = undefined;
+			playerGuessingChanged = true;
 		}
 
-		if (playerId === 'two') {
-			this.playerTwo.name = '';
-			this.playerTwo.token = undefined;
+		const role = square[playerGivingClue];
+
+		if (!square) {
+			console.log(`The word "${word}"" is not on the board.`);
+			return;
 		}
 
-		return '';
-	} else if (name && playerId) {
-		if (playerId === 'one' && !this.playerOne.name) {
-			this.playerOne.name = name;
+		if (square.roleRevealedForClueGiver[playerGivingClue]) {
+			console.log(`The word "${word}" was already revealed to be: ${role} for this clue-giver.`);
+			return;
+		}
+
+		square.roleRevealedForClueGiver[playerGivingClue] = role;
+
+		if (role === ROLES.AGENT) {
+			this.agentsLeft--;
+			this.currentTurn.guessesLeft--;
+		}
+
+		if (square[playerGivingClue] === ROLES.NON_AGENT || (square[playerGivingClue] === ROLES.AGENT && this.currentTurn.guessesLeft < 1)) {
+			this.currentTurn = undefined;
+			this.turnsLeft--;
+		}
+
+		if (square[playerGivingClue] === ROLES.ASSASIN) {
+			this.currentTurn = undefined;
+			this.turnsLeft = 0;
+		}
+
+		// eslint-disable-next-line consistent-return
+		return {
+			word,
+			roleRevealedForClueGiver: square.roleRevealedForClueGiver,
+			guessesLeft: (this.currentTurn && this.currentTurn.guessesLeft) || 0,
+			playerGuessingChanged,
+		};
+	}
+
+	endTurn() {
+		if (this.currentTurn) {
+			this.turnsLeft -= 1;
+			this.currentTurn = undefined;
+		}
+	}
+
+	getWordsOfEntityTypeForPlayer(entityType, player) {
+		return Object.keys(this.wordMap).filter((word) => {
+			return this.wordMap[word][player] === entityType;
+		}, this);
+	}
+
+	getWords() {
+		const words = {};
+
+		Object.keys(this.wordMap).forEach((word) => {
+			words[word] = {
+				roleRevealedForClueGiver: this.wordMap[word].roleRevealedForClueGiver,
+			};
+		}, this);
+
+		return words;
+	}
+
+	getTurnsLeft() {
+		return this.turnsLeft;
+	}
+
+	getViewForPlayer(player) {
+		if (!player) return this.getWords();
+
+		const words = {};
+		const playerNumber = player === 'one' ? 'playerOne' : 'playerTwo';
+
+		Object.keys(this.wordMap).forEach((word) => {
+			words[word] = {
+				role: this.wordMap[word][playerNumber],
+				roleRevealedForClueGiver: this.wordMap[word].roleRevealedForClueGiver,
+			};
+		}, this);
+
+		return words;
+	}
+
+	setPlayerName(name, playerId, token) {
+		if (!name) {
+			if (playerId === 'one') {
+				this.playerOne.name = '';
+				this.playerOne.token = undefined;
+			}
+
+			if (playerId === 'two') {
+				this.playerTwo.name = '';
+				this.playerTwo.token = undefined;
+			}
+
+			return '';
+		} else if (name && playerId) {
+			if (playerId === 'one' && (!this.playerOne.name || name === this.playerOne.name)) {
+				this.playerOne.name = name;
+				if (token) this.playerOne.token = token;
+				return 'one';
+			} else if (playerId === 'two' && (!this.playerTwo.name || name === this.playerTwo.name)) {
+				this.playerTwo.name = name;
+				if (token) this.playerTwo.token = token;
+				return 'two';
+			}
+
+			return '';
+		}
+
+		// both player slots are taken
+		if (this.playerOne.name && this.playerOne.name !== name && this.playerTwo.name && this.playerTwo.name !== name) return '';
+
+		if (this.playerOne.name === name) {
 			if (token) this.playerOne.token = token;
 			return 'one';
-		} else if (playerId === 'two' && !this.playerTwo.name) {
-			this.playerTwo.name = name;
+		}
+
+		if (this.playerTwo.name === name) {
 			if (token) this.playerTwo.token = token;
 			return 'two';
 		}
 
-		return '';
-	}
+		if (!this.playerOne.name) {
+			this.playerOne.name = name;
+			if (token) this.playerOne.token = token;
+			return 'one';
+		}
 
-	// both player slots are taken
-	if (this.playerOne.name && this.playerOne.name !== name && this.playerTwo.name && this.playerTwo.name !== name) return '';
-
-	if (this.playerOne.name === name) {
-		if (token) this.playerOne.token = token;
-		return 'one';
-	}
-
-	if (this.playerTwo.name === name) {
+		this.playerTwo.name = name;
 		if (token) this.playerTwo.token = token;
 		return 'two';
 	}
 
-	if (!this.playerOne.name) {
-		this.playerOne.name = name;
-		if (token) this.playerOne.token = token;
-		return 'one';
+	getPlayerName(playerId) {
+		if (playerId === 'one') return this.playerOne.name;
+		if (playerId === 'two') return this.playerTwo.name;
+		return '';
 	}
 
-	this.playerTwo.name = name;
-	if (token) this.playerTwo.token = token;
-	return 'two';
-};
-
-Game.prototype.getPlayerName = function(playerId) {
-	if (playerId === 'one') return this.playerOne.name;
-	if (playerId === 'two') return this.playerTwo.name;
-};
-
-
-Game.prototype.getTokenForPlayer = function(playerId) {
-	if (playerId === 'one') return this.playerOne.token;
-	if (playerId === 'two') return this.playerTwo.token;
-};
+	getTokenForPlayer(playerId) {
+		if (playerId === 'one') return this.playerOne.token;
+		if (playerId === 'two') return this.playerTwo.token;
+		return '';
+	}
+}
 
 module.exports = Game;

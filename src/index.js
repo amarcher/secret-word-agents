@@ -116,13 +116,15 @@ function handleRequest(ws, data) {
 
 function handleStartNewGame(gameId) {
 	const game = getOrCreateGame(gameId);
-	const playerOne = Object.assign({}, game.playerOne);
-	const playerTwo = Object.assign({}, game.playerTwo);
+	const playerOneName = game.getPlayerName('one');
+	const playerTwoName = game.getPlayerName('two');
+	const playerOneToken = playerOneName && game.getTokenForPlayer('one');
+	const playerTwoToken = playerTwoName && game.getTokenForPlayer('one');
 
 	games[gameId] = new Game();
 
-	if (playerOne.name) game.setPlayerName(playerOne.name, 'one', playerOne.token);
-	if (playerTwo.name) game.setPlayerName(playerTwo.name, 'two', playerTwo.token);
+	if (playerOneName) games[gameId].setPlayerName(playerOneName, 'one', playerOneToken);
+	if (playerTwoToken) games[gameId].setPlayerName(playerTwoName, 'two', playerTwoToken);
 
 	sockets[gameId].forEach((client) => {
 		sendWholeGameState(client, gameId);
