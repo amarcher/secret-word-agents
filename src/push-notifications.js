@@ -1,3 +1,5 @@
+/* eslint-disable no-console, no-new-require */
+
 const PushNotifications = new require('node-pushnotifications');
 
 class NotificationService {
@@ -16,16 +18,15 @@ class NotificationService {
 	}
 
 	send(registrationIds, data) {
-		console.log('preparing to send to registrationIds', registrationIds, data);
 		if (!registrationIds || !registrationIds.length) return;
-		console.log('sending iOS notification', registrationIds);
+
+		console.log('sending iOS notification', registrationIds, data);
 
 		this.push.send(registrationIds, data, (err, result) => {
 			if (err) {
-				console.log(err, err.message);
+				console.log(err);
 			} else {
-			        console.log(result, result[0]);
-			        console.log(result[0].message);
+				console.log(result[0].message);
 			}
 		});
 	}
