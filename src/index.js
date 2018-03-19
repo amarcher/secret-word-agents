@@ -262,6 +262,9 @@ function broadcast(gameId, data) {
 function iOSNotify(gameId, playerId, data) {
 	const dataToSend = Object.assign({}, data, {
 		topic: 'org.reactjs.native.example.Dooler',
+		badge: 1,
+		sound: 'default',
+		custom: { gameId },
 	});
 
 	const game = getOrCreateGame(gameId);
