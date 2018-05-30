@@ -418,6 +418,10 @@ app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU
 	res.send('xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU.wcyPaoYEfPqL-uVIHthYuQAf46zGDhI2Dt6L-aP4veQ');
 });
 
+app.get('/.well-known/acme-challenge/KzAHWxEzz18C-brAysfrUglzG2soFEMNKGKMJ9X0qVo', (req, res) => {
+	res.send('KzAHWxEzz18C-brAysfrUglzG2soFEMNKGKMJ9X0qVo.wcyPaoYEfPqL-uVIHthYuQAf46zGDhI2Dt6L-aP4veQ');
+});
+
 app.all('*', (req, res) => {
 	res.render('layout');
 });
