@@ -1,7 +1,7 @@
 import { createAction, createReducer } from 'redux-act';
 import { endTurn as submitEndTurn, giveClue as submitGiveClue } from '../fetchers';
 import { getPlayerId } from './player-id-store';
-import { getGameId } from './game-store';
+import { getActiveGameId } from './game-store';
 import { AGENTS_PER_PLAYER } from '../rules/game';
 
 export const updateTurnsLeft = createAction('Update remaining turns left in the game');
@@ -13,39 +13,68 @@ const INITIAL_STATE = {
 	wordsGuessedThisTurn: [],
 };
 
-const reducer = createReducer({
-	[updateTurnsLeft]: (state, payload) => ({
-		...state,
-		turnsLeft: payload,
-		playerGivingClue: undefined,
-		clue: undefined,
-		guessesLeft: undefined,
-	}),
-	[updateClue]: (state, { word, number, playerGivingClue }) => ({
-		...state,
-		playerGivingClue,
-		clue: {
-			word,
-			number: window.parseInt(number, 10),
-		},
-		guessesLeft: window.parseInt(number, 10),
-	}),
-	[updateGuessesLeft]: (state, { guessesLeft } = {}) => ({
-		...state,
-		guessesLeft,
-	}),
-}, INITIAL_STATE);
+export const reducer = createReducer({
+	[updateTurnsLeft]: (state, { gameId, turnsLeft }) => {
+		if (!gameId) return state;
+
+		const {
+			playerGivingClue, clue, guessesLeft, ...prevGameState
+		} = state[gameId] || INITIAL_STATE;
+
+		return {
+			...state,
+			[gameId]: {
+				...prevGameState,
+				turnsLeft,
+			},
+		};
+	},
+	[updateClue]: (state, {
+		gameId, word, number, playerGivingClue,
+	}) => {
+		if (!gameId) return state;
+
+		const prevGameState = state[gameId] || INITIAL_STATE;
+
+		return {
+			...state,
+			[gameId]: {
+				...prevGameState,
+				playerGivingClue,
+				clue: {
+					word,
+					number: window.parseInt(number, 10),
+				},
+				guessesLeft: window.parseInt(number, 10),
+			},
+		};
+	},
+	[updateGuessesLeft]: (state, { gameId, guessesLeft } = {}) => {
+		if (!gameId) return state;
+
+		const prevGameState = state[gameId] || INITIAL_STATE;
+
+		return {
+			...state,
+			[gameId]: {
+				...prevGameState,
+				guessesLeft,
+			},
+		};
+	},
+}, {});
 
 // Selectors
-export const getTurnsLeft = state => state && state.turns && state.turns.turnsLeft;
-export const getClue = state => state && state.turns && state.turns.clue;
-export const getGuessesLeft = state => state && state.turns && state.turns.guessesLeft;
+export const getTurnsLeftForGameId = (state, gameId) => (state && state.turns && state.turns[gameId] && state.turns[gameId].turnsLeft)
+	|| INITIAL_STATE.turnsLeft;
+export const getClueForGameId = (state, gameId) => state && state.turns && state.turns[gameId] && state.turns[gameId].clue;
+export const getGuessesLeftForGameId = (state, gameId) => state && state.turns && state.turns[gameId] && state.turns[gameId].guessesLeft;
 
 // Thunks
 export function giveClue({ word, number }) {
 	return (dispatch, getState) => (
 		submitGiveClue({
-			gameId: getGameId(getState()),
+			gameId: getActiveGameId(getState()),
 			player: getPlayerId(getState()),
 			word,
 			number,
@@ -56,7 +85,7 @@ export function giveClue({ word, number }) {
 export function endTurn() {
 	return (dispatch, getState) => (
 		submitEndTurn({
-			gameId: getGameId(getState()),
+			gameId: getActiveGameId(getState()),
 		})
 	);
 }

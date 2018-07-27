@@ -2,8 +2,9 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
-import { endTurn, getGuessesLeft, getTurnsLeft } from '../stores/turns-store';
+import { endTurn, getGuessesLeftForGameId, getTurnsLeftForGameId } from '../stores/turns-store';
 import { getPlayerId } from '../stores/player-id-store';
+import { getActiveGameId } from '../stores/game-store';
 
 const propTypes = {
 	endTurn: PropTypes.func.isRequired,
@@ -36,10 +37,12 @@ BaseEndTurn.defaultProps = defaultProps;
 const mapDispatchToProps = { endTurn };
 
 function mapStateToProps(state) {
+	const gameId = getActiveGameId(state);
+
 	return {
-		guessesLeft: getGuessesLeft(state),
-		playerId: getPlayerId(state),
-		turnsLeft: getTurnsLeft(state),
+		guessesLeft: getGuessesLeftForGameId(state, gameId),
+		playerId: getPlayerId(state, gameId),
+		turnsLeft: getTurnsLeftForGameId(state, gameId),
 	};
 }
 

@@ -275,3 +275,24 @@
 .light {
 	color: #898989;
 }
+
+.facebook-login,
+.facebook-login:active {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	background-color: #4c69ba;
+	background-size: contain;
+	height: 50px;
+	line-height: 50px;
+	min-width: 50px;
+}
+
+.game-summary {
+	display: block;
+	margin-top: 2px;
+}
+
+.game-summary-section {
+	text-align: left;
+}

@@ -19,6 +19,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const games = {};
 const sockets = {};
+const facebookIds = {};
 
 
 // START SERVER
@@ -87,7 +88,7 @@ function handleRequest(ws, data) {
 
 	if (!sockets[gameId] || !sockets[gameId].has(ws)) {
 		// player has entered game they were not in before
-		handlePlayerJoined(ws, gameId, payload.playerName, payload.token);
+		handlePlayerJoined(ws, gameId, payload.playerName, payload.token, payload.facebookId);
 	}
 
 	switch (type) {
@@ -98,7 +99,7 @@ function handleRequest(ws, data) {
 		makeGuess(gameId, payload.word, payload.player);
 		break;
 	case 'changePlayer':
-		handlePlayerChanged(ws, payload.player, payload.playerName, payload.token);
+		handlePlayerChanged(ws, payload.player, payload.playerName, payload.token, payload.facebookId);
 		break;
 	case 'giveClue':
 		giveClue(gameId, payload.player, payload.word, payload.number);
@@ -152,7 +153,7 @@ function handlePlayerLeft(ws) {
 	ws.playerName = undefined;
 }
 
-function handlePlayerJoined(ws, gameId, playerName, token) {
+function handlePlayerJoined(ws, gameId, playerName, token, facebookId) {
 	if (sockets[gameId]) {
 		// Tell the client who else is connected
 		sockets[gameId].forEach((client) => {
@@ -176,7 +177,14 @@ function handlePlayerJoined(ws, gameId, playerName, token) {
 	ws.gameId = gameId;
 	ws.playerName = playerName;
 
-	const player = getOrCreateGame(gameId).setPlayerName(playerName, undefined, token);
+	if (facebookIds[facebookId]) {
+		facebookIds[facebookId].add(gameId);
+	} else if (facebookId) {
+		facebookIds[facebookId] = new Set([gameId]);
+	}
+
+
+	const player = getOrCreateGame(gameId).setPlayerName(playerName, undefined, token, facebookId);
 
 	broadcast(gameId, {
 		type: 'playerJoined',
@@ -199,7 +207,7 @@ function handlePlayerJoined(ws, gameId, playerName, token) {
 	}
 }
 
-function handlePlayerChanged(ws, player, playerName, token) {
+function handlePlayerChanged(ws, player, playerName, token, facebookId) {
 	if (ws.playerName === playerName && player === ws.player) return;
 
 	if (typeof playerName !== 'undefined') {
@@ -212,7 +220,13 @@ function handlePlayerChanged(ws, player, playerName, token) {
 		});
 
 		const game = getOrCreateGame(ws.gameId);
-		player = game.setPlayerName(playerName, ws.player, token);
+		player = game.setPlayerName(playerName, ws.player, token, facebookId);
+
+		if (facebookIds[facebookId]) {
+			facebookIds[facebookId].add(ws.gameId);
+		} else if (facebookId) {
+			facebookIds[facebookId] = new Set([ws.gameId]);
+		}
 
 		ws.playerName = playerName;
 
@@ -245,7 +259,7 @@ function handlePlayerChanged(ws, player, playerName, token) {
 
 function send(client, data) {
 	if (client.readyState === 1) {
-		client.send(JSON.stringify(data));
+		client.send(JSON.stringify({ gameId: client.gameId, ...data }));
 	}
 }
 
@@ -253,7 +267,7 @@ function broadcast(gameId, data) {
 	if (sockets[gameId]) {
 		sockets[gameId].forEach((client) => {
 			if (client.readyState === 1) {
-				client.send(JSON.stringify(data));
+				client.send(JSON.stringify({ gameId, ...data }));
 			}
 		});
 	}
@@ -275,14 +289,14 @@ function iOSNotify(gameId, playerId, data) {
 	iosNotificationService.send(registrationIds, dataToSend);
 }
 
-function getOrCreateGame(hash) {
-	if (games[hash]) {
-		return games[hash];
+function getOrCreateGame(gameId) {
+	if (games[gameId]) {
+		return games[gameId];
 	}
 
-	games[hash] = new Game();
+	games[gameId] = new Game();
 
-	return games[hash];
+	return games[gameId];
 }
 
 function giveClue(gameId, player, word, number) {
@@ -331,6 +345,18 @@ function endTurn(gameId) {
 function getWordsForPlayer(gameId, player) {
 	const game = getOrCreateGame(gameId);
 	return player ? game.getViewForPlayer(player) : game.getWords();
+}
+
+function getGameForFacebookId(gameId, facebookId) {
+	const game = getOrCreateGame(gameId);
+	const player = game.getPlayerWithFacebookId(facebookId);
+	const words = player ? game.getViewForPlayer(player) : game.getWords();
+
+	return {
+		words,
+		player,
+		turnsLeft: game.getTurnsLeft(),
+	};
 }
 
 function makeGuess(gameId, word, player) {
@@ -413,6 +439,27 @@ app.use((req, res, next) => {
 });
 
 app.get('*.(gif|png|jpe?g|svg|ico|app|ipa|plist)', express.static('public/img'));
+
+app.get('/games', (req, res) => {
+	const { facebookId } = req.query;
+
+	let gameIds = [];
+	if (facebookIds[facebookId]) {
+		gameIds = Array.from(facebookIds[facebookId]);
+	}
+
+	console.log(`found ${gameIds.length} games for facebookId ${facebookId}`);
+
+	const gameInfo = gameIds.reduce((allGames, gameId) => ({
+		...allGames,
+		[gameId]: {
+			gameId,
+			...getGameForFacebookId(gameId, facebookId),
+		},
+	}), {});
+
+	res.send(gameInfo);
+});
 
 app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU', (req, res) => {
 	res.send('xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU.wcyPaoYEfPqL-uVIHthYuQAf46zGDhI2Dt6L-aP4veQ');

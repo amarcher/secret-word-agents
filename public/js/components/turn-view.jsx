@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
-import { getTurnsLeft } from '../stores/turns-store';
-import { getAgentsLeft } from '../stores/game-store';
+import { getTurnsLeftForGameId } from '../stores/turns-store';
+import { getAgentsLeftForGameId, getActiveGameId } from '../stores/game-store';
 
 const propTypes = {
 	agentsLeft: PropTypes.number.isRequired,
@@ -48,9 +48,11 @@ export class BaseTurnView extends Component {
 BaseTurnView.propTypes = propTypes;
 
 function mapStateToProps(state) {
+	const gameId = getActiveGameId(state);
+
 	return {
-		turnsLeft: getTurnsLeft(state),
-		agentsLeft: getAgentsLeft(state),
+		turnsLeft: getTurnsLeftForGameId(state, gameId),
+		agentsLeft: getAgentsLeftForGameId(state, gameId),
 	};
 }
 

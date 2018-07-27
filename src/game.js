@@ -205,9 +205,9 @@ class Game {
 	}
 
 	getWordsOfEntityTypeForPlayer(entityType, player) {
-		return Object.keys(this.wordMap).filter((word) => {
-			return this.wordMap[word][player] === entityType;
-		}, this);
+		return Object.keys(this.wordMap).filter(word => (
+			this.wordMap[word][player] === entityType
+		), this);
 	}
 
 	getWords() {
@@ -242,16 +242,18 @@ class Game {
 		return words;
 	}
 
-	setPlayerName(name, playerId, token) {
+	setPlayerName(name, playerId, token, facebookId) {
 		if (!name) {
 			if (playerId === 'one') {
 				this.playerOne.name = '';
 				this.playerOne.token = undefined;
+				this.playerOne.facebookId = undefined;
 			}
 
 			if (playerId === 'two') {
 				this.playerTwo.name = '';
 				this.playerTwo.token = undefined;
+				this.playerTwo.facebookId = undefined;
 			}
 
 			return '';
@@ -259,10 +261,12 @@ class Game {
 			if (playerId === 'one' && (!this.playerOne.name || name === this.playerOne.name)) {
 				this.playerOne.name = name;
 				if (token) this.playerOne.token = token;
+				if (facebookId) this.playerOne.facebookId = facebookId;
 				return 'one';
 			} else if (playerId === 'two' && (!this.playerTwo.name || name === this.playerTwo.name)) {
 				this.playerTwo.name = name;
 				if (token) this.playerTwo.token = token;
+				if (facebookId) this.playerTwo.facebookId = facebookId;
 				return 'two';
 			}
 
@@ -274,22 +278,26 @@ class Game {
 
 		if (this.playerOne.name === name) {
 			if (token) this.playerOne.token = token;
+			if (facebookId) this.playerOne.facebookId = facebookId;
 			return 'one';
 		}
 
 		if (this.playerTwo.name === name) {
 			if (token) this.playerTwo.token = token;
+			if (facebookId) this.playerTwo.facebookId = facebookId;
 			return 'two';
 		}
 
 		if (!this.playerOne.name) {
 			this.playerOne.name = name;
+			if (facebookId) this.playerOne.facebookId = facebookId;
 			if (token) this.playerOne.token = token;
 			return 'one';
 		}
 
 		this.playerTwo.name = name;
 		if (token) this.playerTwo.token = token;
+		if (facebookId) this.playerTwo.facebookId = facebookId;
 		return 'two';
 	}
 
@@ -302,6 +310,12 @@ class Game {
 	getTokenForPlayer(playerId) {
 		if (playerId === 'one') return this.playerOne.token;
 		if (playerId === 'two') return this.playerTwo.token;
+		return '';
+	}
+
+	getPlayerWithFacebookId(facebookId) {
+		if (facebookId === this.playerOne.facebookId) return 'one';
+		if (facebookId === this.playerTwo.facebookId) return 'two';
 		return '';
 	}
 }

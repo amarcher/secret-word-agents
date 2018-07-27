@@ -1,13 +1,29 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import FacebookLogin from 'react-facebook-login';
 import { connect } from 'react-redux';
 
 import { isIOSSafari } from '../utils/helpers';
-import { setPlayerName } from '../stores/player-id-store';
+import { setPlayerName, setFacebookId, getFacebookId, getFacebookImage, getPlayerName } from '../stores/player-name-store';
+import { getGames, getGamesViaApi } from '../stores/game-store';
 import { history } from '../stores';
+import GameSummary from './game-summary';
 
 const propTypes = {
 	setPlayerName: PropTypes.func.isRequired,
+	setFacebookId: PropTypes.func.isRequired,
+	getGamesViaApi: PropTypes.func.isRequired,
+	playerName: PropTypes.string,
+	facebookId: PropTypes.string,
+	facebookImage: PropTypes.string,
+	games: PropTypes.arrayOf(PropTypes.string),
+};
+
+const defaultProps = {
+	playerName: undefined,
+	facebookId: undefined,
+	facebookImage: undefined,
+	games: [],
 };
 
 const IS_IOS_SAFARI = isIOSSafari();
@@ -19,12 +35,22 @@ export class BaseEnterGame extends Component {
 
 		this.state = {
 			gameId: '',
-			name: '',
+			name: props.playerName,
 		};
 
 		this.onSubmit = this.onSubmit.bind(this);
 		this.onChangeGameId = this.onChangeGameId.bind(this);
 		this.onChangeName = this.onChangeName.bind(this);
+	}
+
+	componentDidMount() {
+		this.props.getGamesViaApi();
+	}
+
+	componentWillReceiveProps(nextProps) {
+		if (nextProps.playerName !== this.state.name) {
+			this.setState(() => ({ name: nextProps.playerName }));
+		}
 	}
 
 	onChangeGameId(e) {
@@ -59,9 +85,72 @@ export class BaseEnterGame extends Component {
 		);
 	}
 
+	renderFacebookLoginButton() {
+		const { facebookId, facebookImage } = this.props;
+
+		if (facebookId) {
+			return (
+				<button
+					type="button"
+					className="facebook-login"
+					onClick={() => {
+						this.props.setFacebookId({
+							facebookId: undefined,
+							facebookImage: undefined,
+						});
+						this.props.getGamesViaApi();
+					}}
+					style={{ background: `url("${facebookImage}")` }}
+				/>
+			);
+		}
+
+		return (
+			<FacebookLogin
+				appId="977527402285765"
+				fields="name,email,picture"
+				size="small"
+				cssClass="facebook-login"
+				icon="fa-facebook"
+				callback={({ name, id, picture } = {}) => {
+					const image = picture && picture.data && picture.data.url;
+
+					this.props.setFacebookId({
+						playerName: name.split(' ')[0].toUpperCase(),
+						facebookId: id,
+						facebookImage: image,
+					});
+					this.props.getGamesViaApi();
+				}}
+				textButton=""
+			/>
+		);
+	}
+
+	renderGameSummaries() {
+		const { games } = this.props;
+
+		if (!games || !games.length) return null;
+
+		const gameSummaries = games.map(gameId => (
+			<GameSummary gameId={gameId} key={gameId} />
+		));
+
+		return (
+			<div className="game-summary-section">
+				<span>Rejoin an existing game:</span>
+				{gameSummaries}
+			</div>
+		);
+	}
+
 	render() {
+		const { facebookId } = this.props;
+		const { gameId, name } = this.state;
+
 		return (
 			<div className="enter-game-container">
+				{this.renderFacebookLoginButton()}
 				<div className="enter-game">
 					<h1 className="title">Dooler</h1>
 					<form onSubmit={this.onSubmit}>
@@ -69,13 +158,13 @@ export class BaseEnterGame extends Component {
 							className="enter-game-input"
 							placeholder="Game Code"
 							onChange={this.onChangeGameId}
-							value={this.state.gameId}
+							value={gameId}
 						/>
 						<input
 							className="enter-name-input"
 							placeholder="Your Name"
 							onChange={this.onChangeName}
-							value={this.state.name}
+							value={name}
 						/>
 						<div>
 							<button className="enter-game-button" type="submit" disabled={!this.state.gameId}>
@@ -83,6 +172,8 @@ export class BaseEnterGame extends Component {
 							</button>
 						</div>
 					</form>
+
+					{this.renderGameSummaries()}
 				</div>
 				{this.renderDownloadOnIOSLink()}
 			</div>
@@ -91,9 +182,26 @@ export class BaseEnterGame extends Component {
 }
 
 BaseEnterGame.propTypes = propTypes;
+BaseEnterGame.defaultProps = defaultProps;
+
+const mapStateToProps = (state) => {
+	const playerName = getPlayerName(state);
+	const facebookId = getFacebookId(state);
+	const facebookImage = getFacebookImage(state);
+	const games = getGames(state);
+
+	return {
+		playerName,
+		facebookId,
+		facebookImage,
+		games,
+	};
+};
 
 const mapDispatchToProps = {
 	setPlayerName,
+	setFacebookId,
+	getGamesViaApi,
 };
 
-export default connect(undefined, mapDispatchToProps)(BaseEnterGame);
+export default connect(mapStateToProps, mapDispatchToProps)(BaseEnterGame);

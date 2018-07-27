@@ -2,7 +2,8 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
-import { getConnectedPlayerNames } from '../stores/players-store';
+import { getActiveGameId } from '../stores/game-store';
+import { getConnectedPlayerNamesForGameId } from '../stores/players-store';
 
 const propTypes = {
 	players: PropTypes.arrayOf(PropTypes.string).isRequired,
@@ -30,8 +31,10 @@ export class BasePlayerView extends Component {
 BasePlayerView.propTypes = propTypes;
 
 function mapStateToProps(state) {
+	const gameId = getActiveGameId(state);
+
 	return {
-		players: getConnectedPlayerNames(state),
+		players: getConnectedPlayerNamesForGameId(state, gameId),
 	};
 }
 

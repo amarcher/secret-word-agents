@@ -4,40 +4,60 @@ export const incrementPlayerCount = createAction('Increment count of players con
 export const decrementPlayerCount = createAction('Decrement count of players connected to the game');
 export const clearPlayers = createAction('Remove all players from the game');
 
-const initialState = { count: 0, connectedPlayerNames: [] };
+const initialPlayersState = { count: 0, connectedPlayerNames: [] };
 
 const reducer = createReducer({
-	[incrementPlayerCount]: (state, { count, playerName }) => {
-		if (!count) return state;
+	[incrementPlayerCount]: (state, { gameId, count, playerName }) => {
+		if (!count || !gameId) return state;
+
+		const prevPlayerCount = state[gameId] || initialPlayersState;
+
+		const newState = {
+			...state,
+			[gameId]: {
+				...prevPlayerCount,
+				count,
+				connectedPlayerNames: [
+					...prevPlayerCount.connectedPlayerNames,
+					playerName,
+				],
+			},
+		};
+
+		return newState;
+	},
+	[decrementPlayerCount]: (state, { gameId, count, playerName }) => {
+		if (!count || !gameId) return state;
+
+		const prevPlayerCount = state[gameId] || initialPlayersState;
+
+		const playerIndex = prevPlayerCount.connectedPlayerNames.indexOf(playerName);
 
 		return {
 			...state,
-			count,
-			connectedPlayerNames: [
-				...state.connectedPlayerNames,
-				playerName,
-			],
+			[gameId]: {
+				...prevPlayerCount,
+				count,
+				connectedPlayerNames: [
+					...prevPlayerCount.connectedPlayerNames.slice(0, playerIndex),
+					...prevPlayerCount.connectedPlayerNames.slice(playerIndex + 1),
+				],
+			},
 		};
 	},
-	[decrementPlayerCount]: (state, { count, playerName }) => {
-		if (!count) return state;
-
-		const playerIndex = state.connectedPlayerNames.indexOf(playerName);
+	[clearPlayers]: (state, { gameId }) => {
+		if (!gameId) return state;
 
 		return {
 			...state,
-			count,
-			connectedPlayerNames: [
-				...state.connectedPlayerNames.slice(0, playerIndex),
-				...state.connectedPlayerNames.slice(playerIndex + 1),
-			],
+			[gameId]: initialPlayersState,
 		};
 	},
-	[clearPlayers]: () => initialState,
-}, initialState);
+}, {});
 
 // Selectors
-export const getPlayers = state => state && state.players && state.players.count;
-export const getConnectedPlayerNames = state => state && state.players && state.players.connectedPlayerNames;
+export const getPlayersForGameId = (state, gameId) => state && state.players && state.players[gameId] && state.players[gameId].count;
+export const getConnectedPlayerNamesForGameId = (state, gameId) => state && state.players && state.players[gameId]
+	&& state.players[gameId].connectedPlayerNames;
 
 export default reducer;

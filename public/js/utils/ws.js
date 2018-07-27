@@ -44,9 +44,11 @@ function onError(err) {
 function onClose() {
 	console.log('closing connection'); // eslint-disable-line no-console
 
-	ws.removeEventListener('message', onMessage);
-	ws.removeEventListener('close', onClose);
-	ws.removeEventListener('error', onError);
+	if (ws) {
+		ws.removeEventListener('message', onMessage);
+		ws.removeEventListener('close', onClose);
+		ws.removeEventListener('error', onError);
+	}
 
 	ws = undefined;
 

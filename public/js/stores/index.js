@@ -3,10 +3,11 @@ import { routerReducer, routerMiddleware } from 'react-router-redux';
 import thunkMiddleware from 'redux-thunk';
 import createHistory from 'history/createBrowserHistory';
 
-import gameReducer, { enterGame, getGameId, addOrReplaceGame, updateWordInGame } from './game-store';
+import gameReducer, { enterGame, getActiveGameId, addOrReplaceGame, updateWordInGame } from './game-store';
 import playersReducer, { incrementPlayerCount, decrementPlayerCount, clearPlayers } from './players-store';
 import turnsReducer, { updateTurnsLeft, updateClue, updateGuessesLeft } from './turns-store';
-import playerIdReducer, { setPlayerId, getPlayerName } from './player-id-store';
+import playerIdReducer, { setPlayerId } from './player-id-store';
+import playerNameReducer, { getPlayerName } from './player-name-store';
 import { sendNotification } from '../utils/notifications';
 import { addCallbacks as addWsCallbacks } from '../utils/ws';
 
@@ -19,13 +20,15 @@ export const store = createStore(
 		turns: turnsReducer,
 		players: playersReducer,
 		playerId: playerIdReducer,
+		playerName: playerNameReducer,
 		router: routerReducer,
 	}),
 	applyMiddleware(thunkMiddleware, middleware),
 );
 
 export function onWsEvent(data) {
-	const { type, payload } = data;
+	const { type, payload: payloadWithoutGameId, gameId } = data;
+	const payload = { ...payloadWithoutGameId, gameId };
 
 	switch (type) {
 	case 'words':
@@ -54,10 +57,10 @@ export function onWsEvent(data) {
 
 export function onWsConnected() {
 	const state = store.getState();
-	const gameId = getGameId(state);
+	const gameId = getActiveGameId(state);
 	const playerName = getPlayerName(state);
 
-	store.dispatch(clearPlayers());
+	store.dispatch(clearPlayers({ gameId }));
 	return store.dispatch(enterGame({ gameId, playerName }));
 }
 

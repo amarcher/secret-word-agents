@@ -9,8 +9,8 @@ import InfoView from './info-view';
 import TurnView from './turn-view';
 import PlayerSelect from './player-select';
 import EndTurn from './end-turn';
-import { enterGame, getGame } from '../stores/game-store';
-import { getPlayerName } from '../stores/player-id-store';
+import { enterGame, getGameById, getActiveGameId } from '../stores/game-store';
+import { getPlayerName } from '../stores/player-name-store';
 import { enableNotifications } from '../utils/notifications';
 
 const propTypes = {
@@ -67,10 +67,10 @@ BaseContainer.propTypes = propTypes;
 BaseContainer.defaultProps = defaultProps;
 
 function mapStateToProps(state) {
-	const gameId = state.router.location.pathname.replace('/', '');
+	const gameId = getActiveGameId(state);
 
 	return {
-		game: getGame(state),
+		game: getGameById(state, gameId),
 		gameId,
 		playerName: getPlayerName(state),
 	};
