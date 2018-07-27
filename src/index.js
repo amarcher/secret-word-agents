@@ -259,7 +259,7 @@ function handlePlayerChanged(ws, player, playerName, token, facebookId) {
 
 function send(client, data) {
 	if (client.readyState === 1) {
-		client.send(JSON.stringify({ gameId: client.gameId, ...data }));
+		client.send(JSON.stringify(Object.assign({ gameId: client.gameId }, data)));
 	}
 }
 
@@ -267,7 +267,7 @@ function broadcast(gameId, data) {
 	if (sockets[gameId]) {
 		sockets[gameId].forEach((client) => {
 			if (client.readyState === 1) {
-				client.send(JSON.stringify({ gameId, ...data }));
+				client.send(JSON.stringify(Object.assign({ gameId }, data)));
 			}
 		});
 	}
@@ -308,7 +308,9 @@ function giveClue(gameId, player, word, number) {
 	if (turnsLeftBefore !== turnsLeftAfter) {
 		broadcast(gameId, {
 			type: 'turns',
-			payload: turnsLeftAfter,
+			payload: {
+				turnsLeft: turnsLeftAfter,
+			},
 		});
 	}
 
@@ -337,7 +339,9 @@ function endTurn(gameId) {
 	if (turnsLeftBefore !== turnsLeftAfter) {
 		broadcast(gameId, {
 			type: 'turns',
-			payload: turnsLeftAfter,
+			payload: {
+				turnsLeft: turnsLeftAfter,
+			},
 		});
 	}
 }
@@ -370,7 +374,9 @@ function makeGuess(gameId, word, player) {
 	if (guess && guess.playerGuessingChanged) {
 		broadcast(gameId, {
 			type: 'turns',
-			payload: turnsLeftBefore - 1,
+			payload: {
+				turnsLeft: turnsLeftBefore - 1,
+			},
 		});
 	}
 
@@ -390,7 +396,9 @@ function makeGuess(gameId, word, player) {
 		turnsLeftBefore - 1 > turnsLeftAfter) {
 		broadcast(gameId, {
 			type: 'turns',
-			payload: turnsLeftAfter,
+			payload: {
+				turnsLeft: turnsLeftAfter,
+			},
 		});
 	}
 }
@@ -421,7 +429,9 @@ function sendWholeGameState(ws, gameId) {
 	});
 	send(ws, {
 		type: 'turns',
-		payload: getOrCreateGame(gameId).getTurnsLeft(),
+		payload: {
+			turnsLeft: getOrCreateGame(gameId).getTurnsLeft(),
+		},
 	});
 	maybeSendCurrentClue(ws, gameId);
 }
@@ -450,13 +460,10 @@ app.get('/games', (req, res) => {
 
 	console.log(`found ${gameIds.length} games for facebookId ${facebookId}`);
 
-	const gameInfo = gameIds.reduce((allGames, gameId) => ({
-		...allGames,
-		[gameId]: {
-			gameId,
-			...getGameForFacebookId(gameId, facebookId),
-		},
-	}), {});
+	const gameInfo = gameIds.reduce((allGames, gameId) => {
+		allGames[gameId] = getGameForFacebookId(gameId, facebookId);
+		return allGames;
+	}, {});
 
 	res.send(gameInfo);
 });

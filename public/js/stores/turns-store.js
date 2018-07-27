@@ -65,8 +65,10 @@ export const reducer = createReducer({
 }, {});
 
 // Selectors
-export const getTurnsLeftForGameId = (state, gameId) => (state && state.turns && state.turns[gameId] && state.turns[gameId].turnsLeft)
-	|| INITIAL_STATE.turnsLeft;
+export const getTurnsLeftForGameId = (state, gameId) => {
+	const turnsLeft = state && state.turns && state.turns[gameId] && state.turns[gameId].turnsLeft;
+	return (typeof turnsLeft === 'number') ? turnsLeft : INITIAL_STATE.turnsLeft;
+};
 export const getClueForGameId = (state, gameId) => state && state.turns && state.turns[gameId] && state.turns[gameId].clue;
 export const getGuessesLeftForGameId = (state, gameId) => state && state.turns && state.turns[gameId] && state.turns[gameId].guessesLeft;
 
