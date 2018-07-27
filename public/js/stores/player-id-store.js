@@ -1,19 +1,28 @@
 import { createAction, createReducer } from 'redux-act';
 import { changePlayer } from '../fetchers';
-import { getGameId } from './game-store';
+import { getActiveGameId } from './game-store';
+import { getPlayerName, getFacebookId } from './player-name-store';
 
 export const setPlayerId = createAction('Set player id');
 export const setPlayerName = createAction('Set player name');
+export const setFacebookId = createAction('Set Facebook id');
 
 const reducer = createReducer({
-	[setPlayerId]: (state, payload) => ({ ...state, id: payload.player }),
-	[setPlayerName]: (state, payload) => ({ ...state, playerName: payload.playerName }),
+	[setPlayerId]: (state, { gameId, player }) => {
+		if (!gameId) return state;
+
+		return {
+			...state,
+			[gameId]: {
+				id: player,
+			},
+		};
+	},
 }, {});
 
-
 // Selectors
-export const getPlayerId = state => state && state.playerId && state.playerId.id;
-export const getPlayerName = state => state && state.playerId && state.playerId.playerName;
+export const getPlayerId = (state, gameId) => state && state.playerId && state.playerId[gameId]
+	&& state.playerId[gameId].id;
 
 // Thunks
 export function changePlayerId({ playerId }) {
@@ -21,9 +30,10 @@ export function changePlayerId({ playerId }) {
 		const state = getState();
 
 		return changePlayer({
-			gameId: getGameId(state),
+			gameId: getActiveGameId(state),
 			player: playerId,
 			playerName: getPlayerName(state),
+			facebookId: getFacebookId(state),
 		});
 	};
 }

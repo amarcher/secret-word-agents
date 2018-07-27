@@ -2,7 +2,9 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
-import { changePlayerId, getPlayerId, getPlayerName, setPlayerName } from '../stores/player-id-store';
+import { getActiveGameId } from '../stores/game-store';
+import { changePlayerId, getPlayerId } from '../stores/player-id-store';
+import { getPlayerName, setPlayerName } from '../stores/player-name-store';
 
 const propTypes = {
 	changePlayerId: PropTypes.func.isRequired,
@@ -90,8 +92,10 @@ BasePlayerSelect.defaultProps = defaultProps;
 const mapDispatchToProps = { setPlayerName, changePlayerId };
 
 function mapStateToProps(state) {
+	const gameId = getActiveGameId(state);
+
 	return {
-		playerId: getPlayerId(state),
+		playerId: getPlayerId(state, gameId),
 		playerName: getPlayerName(state),
 	};
 }

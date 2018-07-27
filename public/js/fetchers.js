@@ -1,10 +1,11 @@
 import { send } from './utils/ws';
+import { get } from './utils/ajax';
 
-export function fetchGame({ gameId, playerName } = {}) {
+export function fetchGame({ gameId, playerName, facebookId } = {}) {
 	send({
 		type: 'words',
 		gameId,
-		payload: { playerName },
+		payload: { playerName, facebookId },
 	});
 }
 
@@ -16,11 +17,16 @@ export function guess({ gameId, word, player } = {}) {
 	});
 }
 
-export function changePlayer({ gameId, player, playerName }) {
+export function changePlayer({
+	gameId,
+	player,
+	playerName,
+	facebookId,
+}) {
 	send({
 		gameId,
 		type: 'changePlayer',
-		payload: { player, playerName },
+		payload: { player, playerName, facebookId },
 	});
 }
 
@@ -50,4 +56,11 @@ export function startNewGame({
 		type: 'startNewGame',
 		payload: {},
 	});
+}
+
+
+/* HTTPS Fetchers */
+
+export function fetchGames({ facebookId } = {}) {
+	return get('/games', { facebookId });
 }
