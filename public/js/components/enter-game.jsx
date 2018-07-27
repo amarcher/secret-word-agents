@@ -145,7 +145,6 @@ export class BaseEnterGame extends Component {
 	}
 
 	render() {
-		const { facebookId } = this.props;
 		const { gameId, name } = this.state;
 
 		return (
