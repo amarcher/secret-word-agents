@@ -56,8 +56,9 @@ const reducer = createReducer({
 }, {});
 
 // Selectors
-export const getPlayersForGameId = (state, gameId) => state && state.players && state.players[gameId] && state.players[gameId].count;
-export const getConnectedPlayerNamesForGameId = (state, gameId) => state && state.players && state.players[gameId]
-	&& state.players[gameId].connectedPlayerNames;
+export const getPlayersForGameId = (state, gameId) => (state && state.players && state.players[gameId] && state.players[gameId].count)
+	|| initialPlayersState.count;
+export const getConnectedPlayerNamesForGameId = (state, gameId) => (state && state.players && state.players[gameId]
+	&& state.players[gameId].connectedPlayerNames) || initialPlayersState.connectedPlayerNames;
 
 export default reducer;
