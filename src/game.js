@@ -313,6 +313,12 @@ class Game {
 		return '';
 	}
 
+	getFacebookIdForPlayer(playerId) {
+		if (playerId === 'one') return this.playerOne.facebookId;
+		if (playerId === 'two') return this.playerTwo.facebookId;
+		return '';
+	}
+
 	getPlayerWithFacebookId(facebookId) {
 		if (facebookId === this.playerOne.facebookId) return 'one';
 		if (facebookId === this.playerTwo.facebookId) return 'two';

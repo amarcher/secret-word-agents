@@ -81,7 +81,8 @@ function handleRequest(ws, data) {
 	const { gameId, type, payload = {} } = data;
 	if (!gameId) return;
 
-	if (ws.gameId && ws.gameId !== gameId && sockets[ws.gameId]) {
+	const isDifferentGameId = ws.gameId && ws.gameId !== gameId && sockets[ws.gameId];
+	if (isDifferentGameId) {
 		// player has joined a different game, so we boot them from their existing game
 		handlePlayerLeft(ws);
 	}
@@ -93,6 +94,7 @@ function handleRequest(ws, data) {
 
 	switch (type) {
 	case 'words':
+		handlePlayerChanged(ws, payload.player, payload.playerName, payload.token, payload.facebookId);
 		sendWholeGameState(ws, gameId);
 		break;
 	case 'guess':
@@ -120,12 +122,14 @@ function handleStartNewGame(gameId) {
 	const playerOneName = game.getPlayerName('one');
 	const playerTwoName = game.getPlayerName('two');
 	const playerOneToken = playerOneName && game.getTokenForPlayer('one');
-	const playerTwoToken = playerTwoName && game.getTokenForPlayer('one');
+	const playerTwoToken = playerTwoName && game.getTokenForPlayer('two');
+	const playerOneFacebookId = playerOneName && game.getFacebookIdForPlayer('one');
+	const playerTwoFacebookId = playerTwoName && game.getFacebookIdForPlayer('two');
 
 	games[gameId] = new Game();
 
-	if (playerOneName) games[gameId].setPlayerName(playerOneName, 'one', playerOneToken);
-	if (playerTwoToken) games[gameId].setPlayerName(playerTwoName, 'two', playerTwoToken);
+	if (playerOneName) games[gameId].setPlayerName(playerOneName, 'one', playerOneToken, playerOneFacebookId);
+	if (playerTwoToken) games[gameId].setPlayerName(playerTwoName, 'two', playerTwoToken, playerTwoFacebookId);
 
 	sockets[gameId].forEach((client) => {
 		sendWholeGameState(client, gameId);
@@ -143,8 +147,8 @@ function handlePlayerLeft(ws) {
 		},
 	});
 
-	// Make the player's slot available again, unless we have a token!
-	if (!getOrCreateGame(ws.gameId).getTokenForPlayer(ws.player)) {
+	// Make the player's slot available again, unless we have a token or a facebook id!
+	if (!getOrCreateGame(ws.gameId).getTokenForPlayer(ws.player) && !getOrCreateGame(ws.gameId).getFacebookIdForPlayer(ws.player)) {
 		getOrCreateGame(ws.gameId).setPlayerName('', ws.player);
 	}
 
@@ -208,7 +212,9 @@ function handlePlayerJoined(ws, gameId, playerName, token, facebookId) {
 }
 
 function handlePlayerChanged(ws, player, playerName, token, facebookId) {
-	if (ws.playerName === playerName && player === ws.player) return;
+	const game = getOrCreateGame(ws.gameId);
+
+	if (ws.playerName === playerName && player === ws.player && facebookId === game.getFacebookIdForPlayer(player)) return;
 
 	if (typeof playerName !== 'undefined') {
 		broadcast(ws.gameId, {
@@ -219,7 +225,6 @@ function handlePlayerChanged(ws, player, playerName, token, facebookId) {
 			},
 		});
 
-		const game = getOrCreateGame(ws.gameId);
 		player = game.setPlayerName(playerName, ws.player, token, facebookId);
 
 		if (facebookIds[facebookId]) {

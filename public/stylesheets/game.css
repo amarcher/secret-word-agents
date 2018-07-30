@@ -288,6 +288,10 @@
 	min-width: 50px;
 }
 
+.facebook-login--hidden {
+	visibility: hidden;
+}
+
 .game-summary {
 	display: block;
 	margin-top: 2px;
