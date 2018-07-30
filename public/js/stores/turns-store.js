@@ -74,14 +74,16 @@ export const getGuessesLeftForGameId = (state, gameId) => state && state.turns &
 
 // Thunks
 export function giveClue({ word, number }) {
-	return (dispatch, getState) => (
-		submitGiveClue({
-			gameId: getActiveGameId(getState()),
-			player: getPlayerId(getState()),
+	return (dispatch, getState) => {
+		const gameId = getActiveGameId(getState());
+
+		return submitGiveClue({
+			gameId,
+			player: getPlayerId(getState(), gameId),
 			word,
 			number,
-		})
-	);
+		});
+	};
 }
 
 export function endTurn() {
