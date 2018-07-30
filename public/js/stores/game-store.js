@@ -87,7 +87,7 @@ export function makeGuess({ word }) {
 	return (dispatch, getState) => {
 		const state = getState();
 		const gameId = getActiveGameId(state);
-		const playerId = getPlayerId(state);
+		const playerId = getPlayerId(state, gameId);
 		return guess({ gameId, word, player: playerId });
 	};
 }
