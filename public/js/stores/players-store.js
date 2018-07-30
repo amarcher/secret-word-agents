@@ -12,7 +12,7 @@ const reducer = createReducer({
 
 		const prevPlayerCount = state[gameId] || initialPlayersState;
 
-		const newState = {
+		return {
 			...state,
 			[gameId]: {
 				...prevPlayerCount,
@@ -23,8 +23,6 @@ const reducer = createReducer({
 				],
 			},
 		};
-
-		return newState;
 	},
 	[decrementPlayerCount]: (state, { gameId, count, playerName }) => {
 		if (!count || !gameId) return state;

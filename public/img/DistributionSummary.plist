@@ -13,9 +13,9 @@
 			<key>certificate</key>
 			<dict>
 				<key>SHA1</key>
-				<string>58A40BCABC6167B2918F2379E204E0B59EA3FC3A</string>
+				<string>ED966321E255AE407E74F121313D6AEE6DEFA41D</string>
 				<key>dateExpires</key>
-				<string>3/4/19</string>
+				<string>7/30/19</string>
 				<key>type</key>
 				<string>iOS Distribution</string>
 			</dict>
@@ -35,7 +35,7 @@
 			<key>profile</key>
 			<dict>
 				<key>UUID</key>
-				<string>a10cab9b-886c-418a-9084-b2b865d1ea38</string>
+				<string>746742fc-24d7-49f1-b5e8-bd06795bd084</string>
 				<key>name</key>
 				<string>iOS Team Ad Hoc Provisioning Profile: org.reactjs.native.example.Dooler</string>
 			</dict>
