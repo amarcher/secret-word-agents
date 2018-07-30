@@ -77,7 +77,7 @@ export function enterGame({ gameId, playerName }) {
 	return (dispatch, getState) => {
 		// replace the game with an dummy game (just an id)
 		// until we have a full game object from web socket
-		dispatch(addOrReplaceGame({ gameId }));
+		if (!getGameById(getState(), gameId)) dispatch(addOrReplaceGame({ gameId }));
 		const facebookId = getFacebookId(getState());
 		return fetchGame({ gameId, playerName, facebookId });
 	};
@@ -98,21 +98,21 @@ export function getGamesViaApi() {
 		const facebookId = getFacebookId(state);
 
 		if (!facebookId) {
-			dispatch(updateGames({}));
-		} else {
-			fetchGames({
-				facebookId,
-			}).then((games) => {
-				if (games) {
-					dispatch(updateGames(games));
-					Object.values(games).forEach((game) => {
-						dispatch(setPlayerId(game));
-						dispatch(updateTurnsLeft(game));
-						dispatch(clearPlayers(game));
-					});
-				}
-			});
+			return Promise.resolve(dispatch(updateGames({})));
 		}
+
+		return fetchGames({
+			facebookId,
+		}).then((games) => {
+			if (games) {
+				dispatch(updateGames(games));
+				Object.values(games).forEach((game) => {
+					dispatch(setPlayerId(game));
+					dispatch(updateTurnsLeft(game));
+					dispatch(clearPlayers(game));
+				});
+			}
+		});
 	};
 }
 

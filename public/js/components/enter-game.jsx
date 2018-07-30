@@ -108,7 +108,7 @@ export class BaseEnterGame extends Component {
 		return (
 			<FacebookLogin
 				appId="977527402285765"
-				fields="name,email,picture"
+				fields="name,picture"
 				size="small"
 				cssClass="facebook-login"
 				icon="fa-facebook"
@@ -123,6 +123,8 @@ export class BaseEnterGame extends Component {
 					this.props.getGamesViaApi();
 				}}
 				textButton=""
+				scope="public_profile"
+				autoLoad
 			/>
 		);
 	}
