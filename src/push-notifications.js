@@ -1,4 +1,4 @@
-/* eslint-disable no-console, no-new-require */
+/* eslint-disable no-console, no-new-require, new-cap */
 
 const PushNotifications = new require('node-pushnotifications');
 
