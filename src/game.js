@@ -222,8 +222,16 @@ class Game {
 		return words;
 	}
 
+	getWordMap() {
+		return this.wordMap;
+	}
+
 	getTurnsLeft() {
 		return this.turnsLeft;
+	}
+
+	getAgentsLeft() {
+		return this.agentsLeft;
 	}
 
 	getViewForPlayer(player) {

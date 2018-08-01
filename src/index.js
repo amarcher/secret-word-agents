@@ -1,11 +1,12 @@
 /* eslint-disable no-console, no-use-before-define, no-param-reassign */
 
-const Game = require('./game');
 const iosNotificationService = require('./push-notifications');
 const express = require('express');
 const bodyParser = require('body-parser');
 const WebSocketServer = require('ws').Server;
 const http = require('http');
+const Game = require('./game');
+const RedisClient = require('./redis');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -472,6 +473,16 @@ app.get('/games', (req, res) => {
 
 	res.send(gameInfo);
 });
+
+app.get('/redis', (req, res) => {
+	const { gameId } = req.query;
+
+	const client = new RedisClient();
+	client.setGame(gameId, getOrCreateGame(gameId))
+		.then(() => client.getGame(gameId))
+		.then(result => res.send(result));
+});
+
 
 app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU', (req, res) => {
 	res.send('xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU.wcyPaoYEfPqL-uVIHthYuQAf46zGDhI2Dt6L-aP4veQ');
