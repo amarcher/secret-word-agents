@@ -5,7 +5,7 @@ bluebird.promisifyAll(redis);
 
 class RedisClient {
 	constructor() {
-		this.client = redis.createClient();
+		this.client = redis.createClient(process.env.REDIS_URL);
 
 		this.client.on('error', (err) => {
 			console.log(`Redis error: ${err}`); // eslint-disable-line no-console
