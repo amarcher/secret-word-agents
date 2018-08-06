@@ -8,7 +8,7 @@ const initialPlayersState = { count: 0, connectedPlayerNames: [] };
 
 const reducer = createReducer({
 	[incrementPlayerCount]: (state, { gameId, count, playerName }) => {
-		if (!count || !gameId) return state;
+		if (!gameId) return state;
 
 		const prevPlayerCount = state[gameId] || initialPlayersState;
 
@@ -25,7 +25,7 @@ const reducer = createReducer({
 		};
 	},
 	[decrementPlayerCount]: (state, { gameId, count, playerName }) => {
-		if (!count || !gameId) return state;
+		if (!gameId) return state;
 
 		const prevPlayerCount = state[gameId] || initialPlayersState;
 

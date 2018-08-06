@@ -101,12 +101,18 @@ function getWordMap() {
 }
 
 class Game {
-	constructor() {
-		this.wordMap = getWordMap();
-		this.agentsLeft = COUNTS.AGENTS;
-		this.turnsLeft = COUNTS.TURNS;
-		this.playerOne = {};
-		this.playerTwo = {};
+	constructor({
+		wordMap,
+		agentsLeft,
+		turnsLeft,
+		playerOne,
+		playerTwo,
+	} = {}) {
+		this.wordMap = wordMap || getWordMap();
+		this.agentsLeft = agentsLeft || COUNTS.AGENTS;
+		this.turnsLeft = turnsLeft || COUNTS.TURNS;
+		this.playerOne = playerOne || {};
+		this.playerTwo = playerTwo || {};
 	}
 
 	giveClueForTurn(player, clueWord, guessesLeft) {

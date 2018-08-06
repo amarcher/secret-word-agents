@@ -1,29 +1,32 @@
 import { createStore, combineReducers, applyMiddleware } from 'redux';
 import { routerReducer, routerMiddleware } from 'react-router-redux';
+import { composeWithDevTools } from 'redux-devtools-extension/logOnlyInProduction';
 import thunkMiddleware from 'redux-thunk';
 import createHistory from 'history/createBrowserHistory';
 
 import gameReducer, { enterGame, getActiveGameId, addOrReplaceGame, updateWordInGame } from './game-store';
 import playersReducer, { incrementPlayerCount, decrementPlayerCount, clearPlayers } from './players-store';
 import turnsReducer, { updateTurnsLeft, updateClue, updateGuessesLeft } from './turns-store';
-import playerIdReducer, { setPlayerId } from './player-id-store';
+import teamIdReducer, { setTeamId } from './team-id-store';
 import playerNameReducer, { getPlayerName } from './player-name-store';
 import { sendNotification } from '../utils/notifications';
 import { addCallbacks as addWsCallbacks } from '../utils/ws';
 
 export const history = createHistory();
 const middleware = routerMiddleware(history);
+// eslint-disable-next-line no-underscore-dangle
+const composeEnhancers = composeWithDevTools({});
 
 export const store = createStore(
 	combineReducers({
 		game: gameReducer,
 		turns: turnsReducer,
 		players: playersReducer,
-		playerId: playerIdReducer,
+		teamId: teamIdReducer,
 		playerName: playerNameReducer,
 		router: routerReducer,
 	}),
-	applyMiddleware(thunkMiddleware, middleware),
+	composeEnhancers(applyMiddleware(thunkMiddleware, middleware)),
 );
 
 export function onWsEvent(data) {
@@ -42,8 +45,8 @@ export function onWsEvent(data) {
 		return store.dispatch(decrementPlayerCount(payload));
 	case 'playerJoined':
 		return store.dispatch(incrementPlayerCount(payload));
-	case 'playerChanged':
-		return store.dispatch(setPlayerId(payload));
+	case 'teamChanged':
+		return store.dispatch(setTeamId(payload));
 	case 'turns':
 		return store.dispatch(updateTurnsLeft(payload));
 	case 'clueGiven':

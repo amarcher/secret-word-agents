@@ -4,7 +4,7 @@ import { connect } from 'react-redux';
 
 import { getClueForGameId, getGuessesLeftForGameId, getTurnsLeftForGameId, giveClue } from '../stores/turns-store';
 import { startNew, getActiveGameId } from '../stores/game-store';
-import { getPlayerId } from '../stores/player-id-store';
+import { getTeamId } from '../stores/team-id-store';
 
 const propTypes = {
 	clue: PropTypes.shape({
@@ -13,7 +13,7 @@ const propTypes = {
 	}),
 	giveClue: PropTypes.func.isRequired,
 	guessesLeft: PropTypes.number,
-	playerId: PropTypes.string,
+	teamId: PropTypes.string,
 	turnsLeft: PropTypes.number,
 	startNew: PropTypes.func.isRequired,
 };
@@ -21,7 +21,7 @@ const propTypes = {
 const defaultProps = {
 	clue: undefined,
 	guessesLeft: 0,
-	playerId: '',
+	teamId: '',
 	turnsLeft: 0,
 };
 
@@ -83,7 +83,7 @@ export class BaseClueView extends Component {
 	}
 
 	maybeRenderInput() {
-		if (!this.props.playerId || (this.props.clue && this.props.clue.word) || this.props.turnsLeft < 1) {
+		if (!this.props.teamId || (this.props.clue && this.props.clue.word) || this.props.turnsLeft < 1) {
 			return null;
 		}
 
@@ -103,7 +103,9 @@ export class BaseClueView extends Component {
 		if (this.props.turnsLeft > 0) return null;
 
 		return (
-			<button type="button" onClick={() => this.props.startNew()}>Start New Game</button>
+			<div className="start-new-game">
+				<button type="button" onClick={() => this.props.startNew()}>Start New Game</button>
+			</div>
 		);
 	}
 
@@ -129,7 +131,7 @@ function mapStateToProps(state) {
 	return {
 		clue: getClueForGameId(state, gameId),
 		guessesLeft: getGuessesLeftForGameId(state, gameId),
-		playerId: getPlayerId(state, gameId),
+		teamId: getTeamId(state, gameId),
 		turnsLeft: getTurnsLeftForGameId(state, gameId),
 	};
 }

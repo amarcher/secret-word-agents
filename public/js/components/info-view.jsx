@@ -55,7 +55,7 @@ export default class InfoView extends Component {
 					You will each see 9 <span className="color-agent">good</span> words that you need
 					to get your teammate to reveal. Note that words you see
 					as <span className="color-agent">good</span>, your teammate may see
-					as <span className="color-agent">good</span>,
+					as <span className="color-agent">good</span>,&nbsp;
 					<span className="color-non-agent">neutral</span>, or
 					even <span className="color-assasin">kill</span> words.
 				</p>

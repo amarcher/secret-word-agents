@@ -78,7 +78,11 @@
 }
 
 .player-select {
-	flex: 0 1 350px;
+	flex: 1 1 auto;
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	padding: 24px 0;
 }
 
 .players {
@@ -107,13 +111,18 @@
 
 .player-info,
 .header {
-	align-items: flex-start;
+	align-items: flex-end;
 	display: flex;
 	justify-content: space-between;
 }
 
+.header-flex-end {
+	justify-content: flex-end;
+	flex: 0 0 auto;
+}
+
 .player-info {
-	align-items: flex-end;
+	align-items: center;
 	padding: 10px 5%;
 }
 
@@ -128,6 +137,7 @@
 
 .player-select-enter-game {
 	display: flex;
+	flex: 1 1 auto;
 }
 
 .title {
@@ -136,11 +146,13 @@
 }
 
 .enter-game-container {
-	align-items: center;
 	display: flex;
 	flex-direction: column;
 	height: 100vh;
-	justify-content: center;
+}
+
+.enter-game-subcontainer {
+	margin: 0 auto;
 }
 
 .enter-game {
@@ -150,9 +162,14 @@
 
 .enter-game-input,
 .enter-name-input {
+	display: block;
 	margin: 12px;
 	text-align: center;
-	display: block;
+}
+
+.word-input,
+.number-input {
+	margin: 12px;
 }
 
 .enter-game-button {
@@ -165,9 +182,9 @@
 
 .info-view {
 	display: flex;
-	flex: 0 1 300px;
-	justify-content: flex-end;
-	padding: 24px 0;
+	flex: 0 0 auto;
+	justify-content: flex-start;
+	padding: 36px 0;
 }
 
 .info-container {
@@ -181,7 +198,7 @@
 	opacity: 0;
 	padding: 12px;
 	position: absolute;
-	right: 0;
+	left: 0;
 	transition: opacity,box-shadow 0.3s;
 	width: 600px;
 	z-index: -1;
@@ -217,12 +234,12 @@
 }
 
 .info-how-to-play ol {
-	margin: 6px 6px;
+	margin: 6px;
 }
 
 .turn-view {
-	padding: 24px 0;
 	flex: 0 1 300px;
+	padding: 6px;
 }
 
 .turn {
@@ -235,8 +252,11 @@
 }
 
 .game-over,
-.you-win {
+.you-win,
+.start-new-game {
 	font-size: 24px;
+	line-height: 36px;
+	margin: 12px 0;
 }
 
 .you-win {
@@ -252,6 +272,8 @@
 
 .clue-for-guesser {
 	font-size: 24px;
+	line-height: 36px;
+	padding: 12px 0;
 }
 
 .clue-for-guesser-word {
@@ -260,7 +282,7 @@
 
 .word-input,
 .number-input {
-	margin-right: 6px;
+	margin: 12px 6px 12px 0;
 }
 
 .word-input {
@@ -278,18 +300,11 @@
 
 .facebook-login,
 .facebook-login:active {
-	position: absolute;
-	top: 6px;
-	right: 6px;
 	background-color: #4c69ba;
 	background-size: contain;
 	height: 50px;
 	line-height: 50px;
 	min-width: 50px;
-}
-
-.facebook-login--hidden {
-	visibility: hidden;
 }
 
 .game-summary {
