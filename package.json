@@ -4,7 +4,7 @@
   "description": "codewords duet game",
   "main": "src/index.js",
   "engines": {
-    "node": "8.2.0"
+    "node": "8.9.4"
   },
   "engineStrict": true,
   "scripts": {
