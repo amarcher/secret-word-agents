@@ -425,6 +425,7 @@ async function getGameForPlayerId(db, gameId, playerId) {
 
 async function makeGuess(db, ws, word) {
 	const { clueWord } = await db.getTurn(ws.gameId);
+	const turnsLeft = await db.getTurnsLeft(ws.gameId);
 	const guess = await db.makeGuess(ws.gameId, ws.teamId, word);
 
 	if (!guess) return;
@@ -444,12 +445,14 @@ async function makeGuess(db, ws, word) {
 		body: `${playerName} guessed "${word}"${clueText}`,
 	});
 
-	broadcast(ws.gameId, {
-		type: 'turns',
-		payload: {
-			turnsLeft: guess.turnsLeft,
-		},
-	});
+	if (turnsLeft !== guess.turnsLeft) {
+		broadcast(ws.gameId, {
+			type: 'turns',
+			payload: {
+				turnsLeft: guess.turnsLeft,
+			},
+		});
+	}
 }
 
 async function maybeSendCurrentClue(db, ws) {
