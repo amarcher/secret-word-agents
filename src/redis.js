@@ -225,7 +225,7 @@ class RedisClient {
 		let nextTurnsLeft = parseInt(turnsLeft, 10);
 
 		if (role === 'AGENT') {
-			if (teamGuessingChanged) nextTurnsLeft -= 1;
+			if (teamGuessingChanged || !guessesLeft) nextTurnsLeft -= 1;
 
 			this.client.hmsetAsync(
 				`game:${gameId}`,
