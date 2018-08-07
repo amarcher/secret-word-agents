@@ -10,6 +10,7 @@ const RedisClient = require('./redis');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const db = new RedisClient();
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
@@ -89,8 +90,7 @@ wss.on('connection', (ws) => {
 		console.log(`websocket connection closed with reasonCode: ${reasonCode} and description: ${description}`);
 		console.log(`after disconnect we now have ${wss.clients.size} total clients`);
 		if (ws.gameId && sockets[ws.gameId]) {
-			const db = new RedisClient();
-			handlePlayerLeft(db, ws).then(() => db.quit());
+			handlePlayerLeft(ws);
 		}
 	});
 
@@ -118,13 +118,12 @@ async function handleRequest(ws, data) {
 	// If we don't have attributes assigned to this web socket connection, assign them now.
 	if (!ws.gameId) ws.gameId = gameId;
 
-	const db = new RedisClient();
 	const promise = new Promise((resolve) => {
 		if (!sockets[gameId]) {
 			sockets[gameId] = new Set([ws]);
 			// Because we have no socket for this gameId, it's possible that we've never
 			// created a game for the gameId either. Create one if we need to before continuing.
-			getOrCreateGame(db, gameId).then(resolve);
+			getOrCreateGame(gameId).then(resolve);
 		} else if (!sockets[gameId].has(ws)) {
 			// We have other connected users, so replay those other players "joining"
 			sockets[gameId].forEach((client) => {
@@ -156,7 +155,7 @@ async function handleRequest(ws, data) {
 				facebookId,
 				facebookUrl,
 			} = payload;
-			handleTeamChanged(db, ws, teamId, playerName, token, facebookId, facebookUrl);
+			handleTeamChanged(ws, teamId, playerName, token, facebookId, facebookUrl);
 		});
 	} else if (type === 'words') {
 		promise.then(() => {
@@ -168,7 +167,7 @@ async function handleRequest(ws, data) {
 					facebookId,
 					facebookUrl,
 				} = payload;
-				return handleTeamChanged(db, ws, teamId, playerName, token, facebookId, facebookUrl);
+				return handleTeamChanged(ws, teamId, playerName, token, facebookId, facebookUrl);
 			}
 			return Promise.resolve();
 		}).then(async () => {
@@ -200,34 +199,32 @@ async function handleRequest(ws, data) {
 	case 'words':
 		promise.then(() => {
 			console.log('sending whole games state');
-			return sendWholeGameState(db, ws);
+			return sendWholeGameState(ws);
 		});
 		break;
 	case 'guess':
-		promise.then(() => makeGuess(db, ws, payload.word));
+		promise.then(() => makeGuess(ws, payload.word));
 		break;
 	case 'giveClue':
-		promise.then(() => giveClue(db, ws, payload.word, payload.number));
+		promise.then(() => giveClue(ws, payload.word, payload.number));
 		break;
 	case 'endTurn':
-		promise.then(() => endTurn(db, gameId));
+		promise.then(() => endTurn(gameId));
 		break;
 	case 'startNewGame':
-		promise.then(() => handleStartNewGame(db, ws));
+		promise.then(() => handleStartNewGame(ws));
 		break;
 	default:
 		break;
 	}
-
-	promise.then(() => db.quit()).catch(() => db.quit());
 }
 
-async function handleStartNewGame(db, ws) {
+async function handleStartNewGame(ws) {
 	const game = new Game();
 	return db.setGame(ws.gameId, game).then(async () => {
 		if (sockets[ws.gameId]) {
 			sockets[ws.gameId].forEach((client) => {
-				sendWholeGameState(db, client);
+				sendWholeGameState(client);
 			});
 		}
 
@@ -241,7 +238,7 @@ async function handleStartNewGame(db, ws) {
 	});
 }
 
-async function handlePlayerLeft(db, ws) {
+async function handlePlayerLeft(ws) {
 	sockets[ws.gameId].delete(ws);
 
 	if (sockets[ws.gameId].size) {
@@ -270,7 +267,7 @@ async function handlePlayerLeft(db, ws) {
 	});
 }
 
-async function handleTeamChanged(db, ws, team, playerName, token, facebookId, facebookUrl) {
+async function handleTeamChanged(ws, team, playerName, token, facebookId, facebookUrl) {
 	let teamId;
 	if (team) {
 		teamId = team === 'one' ? 1 : 2;
@@ -347,7 +344,7 @@ function iOSNotify(gameId, tokens, data) {
 
 // UTILITY FUNCTIONS
 
-async function getOrCreateGame(db, gameId) {
+async function getOrCreateGame(gameId) {
 	const gameData = await db.getGame(gameId);
 	const game = new Game(gameData);
 
@@ -361,7 +358,7 @@ async function getOrCreateGame(db, gameId) {
 
 // ACTION HANDLERS
 
-async function giveClue(db, ws, clueWord, clueNumber) {
+async function giveClue(ws, clueWord, clueNumber) {
 	const turnsLeftBefore = await db.getTurnsLeft(ws.gameId);
 	const turnsLeftAfter = await db.setTurn(ws.gameId, ws.teamId, clueWord, clueNumber, clueNumber)
 		.then(() => db.getTurnsLeft(ws.gameId));
@@ -393,7 +390,7 @@ async function giveClue(db, ws, clueWord, clueNumber) {
 	});
 }
 
-async function endTurn(db, gameId) {
+async function endTurn(gameId) {
 	const turnsLeft = await db.getTurnsLeft(gameId);
 	return db.setTurnsLeft(gameId, turnsLeft - 1)
 		.then(() => db.setTurn(gameId))
@@ -405,7 +402,7 @@ async function endTurn(db, gameId) {
 		}));
 }
 
-async function getGameForPlayerId(db, gameId, playerId) {
+async function getGameForPlayerId(gameId, playerId) {
 	const teamId = await db.getTeamIdForPlayerId(gameId, playerId);
 	const words = await db.getWords(gameId, teamId);
 	let team;
@@ -420,7 +417,7 @@ async function getGameForPlayerId(db, gameId, playerId) {
 	};
 }
 
-async function makeGuess(db, ws, word) {
+async function makeGuess(ws, word) {
 	const { clueWord } = await db.getTurn(ws.gameId);
 	const turnsLeft = await db.getTurnsLeft(ws.gameId);
 	const guess = await db.makeGuess(ws.gameId, ws.teamId, word);
@@ -452,7 +449,7 @@ async function makeGuess(db, ws, word) {
 	}
 }
 
-async function maybeSendCurrentClue(db, ws) {
+async function maybeSendCurrentClue(ws) {
 	const { clueGiverTeamId, clueWord, guessesLeft } = await db.getTurn(ws.gameId) || {};
 
 	if (!clueWord) return;
@@ -469,7 +466,7 @@ async function maybeSendCurrentClue(db, ws) {
 	});
 }
 
-async function sendWholeGameState(db, ws) {
+async function sendWholeGameState(ws) {
 	send(ws, {
 		type: 'words',
 		payload: {
@@ -483,7 +480,7 @@ async function sendWholeGameState(db, ws) {
 			turnsLeft: await db.getTurnsLeft(ws.gameId),
 		},
 	});
-	maybeSendCurrentClue(db, ws);
+	maybeSendCurrentClue(ws);
 }
 
 // ROUTES
@@ -507,7 +504,6 @@ app.get('/games', async (req, res) => {
 		return Promise.resolve(res.send([]));
 	}
 
-	const db = new RedisClient();
 	const playerId = await db.getPlayerIdForFacebookId(facebookId);
 
 	if (!playerId) {
@@ -520,7 +516,7 @@ app.get('/games', async (req, res) => {
 	console.log(`Found ${gameIds.length} games for facebookId ${facebookId}`);
 
 	const gameInfo = await gameIds.reduce(async (allGames, gameId) => {
-		allGames[gameId] = await getGameForPlayerId(db, gameId, playerId);
+		allGames[gameId] = await getGameForPlayerId(gameId, playerId);
 		return allGames;
 	}, {});
 
@@ -530,11 +526,9 @@ app.get('/games', async (req, res) => {
 app.get('/redis', (req, res) => {
 	const { gameId } = req.query;
 
-	const db = new RedisClient();
 	db.setGame(gameId, new Game())
 		.then(() => db.getGame(gameId))
-		.then(result => res.send(result))
-		.then(() => db.quit());
+		.then(result => res.send(result));
 });
 
 
