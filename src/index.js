@@ -90,7 +90,7 @@ wss.on('connection', (ws) => {
 		console.log(`after disconnect we now have ${wss.clients.size} total clients`);
 		if (ws.gameId && sockets[ws.gameId]) {
 			const db = new RedisClient();
-			handlePlayerLeft(db, ws).then(() => db.quit);
+			handlePlayerLeft(db, ws).then(() => db.quit());
 		}
 	});
 
@@ -129,7 +129,6 @@ async function handleRequest(ws, data) {
 			// We have other connected users, so replay those other players "joining"
 			sockets[gameId].forEach((client) => {
 				if (client.readyState === 1) {
-					console.log('playerJoined from handleRequest', client.playerId, client.playerName);
 					send(ws, {
 						type: 'playerJoined',
 						payload: {
@@ -220,7 +219,7 @@ async function handleRequest(ws, data) {
 		break;
 	}
 
-	promise.then(() => db.quit).catch(() => db.quit);
+	promise.then(() => db.quit()).catch(() => db.quit());
 }
 
 async function handleStartNewGame(db, ws) {
