@@ -83,14 +83,23 @@ wss.on('connection', (ws) => {
 	ws.on('message', (data) => {
 		const parsedData = JSON.parse(data);
 		console.log(`websocket message: ${data}`);
-		handleRequest(ws, parsedData); // eslint-disable-line no-use-before-define
+		handleInitialRequest(ws, parsedData)
+			.then(() => handleRequest(ws, parsedData)); // eslint-disable-line no-use-before-define
 	});
 
 	ws.on('close', (reasonCode, description) => {
 		console.log(`websocket connection closed with reasonCode: ${reasonCode} and description: ${description}`);
 		console.log(`after disconnect we now have ${wss.clients.size} total clients`);
 		if (ws.gameId && sockets[ws.gameId]) {
+			sockets[ws.gameId].delete(ws);
+
 			handlePlayerLeft(ws);
+
+			ws.gameId = undefined;
+			ws.playerName = undefined;
+			ws.token = undefined;
+			ws.playerId = undefined;
+			ws.teamId = undefined;
 		}
 	});
 
@@ -103,22 +112,25 @@ wss.on('connection', (ws) => {
 
 /**
  * HANDLE WEB SOCKET REQUESTS
- *
+ */
+
+/**
+ * Handle possible initial request (the first one after connection)
  * @param  {Object} ws - the web socket object itself
  * @param  {Object} data - the data that came in with the request
  * @param  {String} data.gameId - gameId this request is about
  * @param  {String} data.type - type of request, valid types are enumerated in the switch statement
  * @param  {Object} data.payload - payload of info pertaining to the request
- * @return {void}
+ * @return {Promise} a promise that resolves when the game has been created (if necessary)
  */
-async function handleRequest(ws, data) {
-	const { gameId, type, payload = {} } = data;
-	if (!gameId) return;
+async function handleInitialRequest(ws, data) {
+	const { gameId, payload, type } = data;
+	if (!gameId) return Promise.resolve();
 
 	// If we don't have attributes assigned to this web socket connection, assign them now.
 	if (!ws.gameId) ws.gameId = gameId;
 
-	const promise = new Promise((resolve) => {
+	return new Promise((resolve) => {
 		if (!sockets[gameId]) {
 			sockets[gameId] = new Set([ws]);
 			// Because we have no socket for this gameId, it's possible that we've never
@@ -144,75 +156,66 @@ async function handleRequest(ws, data) {
 		} else {
 			resolve();
 		}
+	}).then(() => {
+		const {
+			token,
+			playerName,
+			facebookId,
+			facebookImage,
+		} = payload;
+
+		if (token && !ws.token) ws.token = token;
+
+		const isImplicitPlayerChange = type !== 'playerChange' && (ws.playerName !== playerName || ws.facebookId !== facebookId);
+		if (isImplicitPlayerChange) return handlePlayerChanged(ws, playerName, facebookId, facebookImage);
+
+		return Promise.resolve();
 	});
+}
 
-	if (type === 'changeTeam') {
-		promise.then(() => {
-			const {
-				teamId,
-				playerName,
-				token,
-				facebookId,
-				facebookUrl,
-			} = payload;
-			handleTeamChanged(ws, teamId, playerName, token, facebookId, facebookUrl);
-		});
-	} else if (type === 'words') {
-		promise.then(() => {
-			if (payload.playerName && (!ws.playerId || (!ws.facebookId && payload.facebookId))) {
-				const {
-					teamId,
-					playerName,
-					token,
-					facebookId,
-					facebookUrl,
-				} = payload;
-				return handleTeamChanged(ws, teamId, playerName, token, facebookId, facebookUrl);
-			}
-			return Promise.resolve();
-		}).then(async () => {
-			if (payload.playerName && ws.playerName !== payload.playerName) {
-				ws.playerName = payload.playerName;
-			}
+/**
+ * Handle requests beyond the initial request
+ * @param  {Object} ws - the web socket object itself
+ * @param  {Object} data - the data that came in with the request
+ * @param  {String} data.gameId - gameId this request is about
+ * @param  {String} data.type - type of request, valid types are enumerated in the switch statement
+ * @param  {Object} data.payload - payload of info pertaining to the request
+ * @return {void}
+ */
+async function handleRequest(ws, data) {
+	const { gameId, type, payload = {} } = data;
+	if (!gameId) return;
 
-			if (ws.playerId && !ws.teamId) {
-				ws.teamId = await db.getTeamIdForPlayerId(gameId, ws.playerId)
-					|| await db.addPlayerToTeam(gameId, ws.playerId, payload.token);
-
-				console.log('adding player to team', ws.teamId);
-
-				console.log('playerJoined from handleRequest lower down', ws.playerId, ws.playerName);
-
-				broadcast(ws.gameId, {
-					type: 'playerJoined',
-					payload: {
-						count: sockets[ws.gameId].size,
-						playerName: ws.playerName,
-						teamId: ws.teamId === 1 ? 'one' : 'two',
-					},
-				});
-			}
-		});
-	}
+	const {
+		teamId,
+		playerName,
+		facebookId,
+		facebookImage,
+		word,
+		number,
+	} = payload;
 
 	switch (type) {
 	case 'words':
-		promise.then(() => {
-			console.log('sending whole games state');
-			return sendWholeGameState(ws);
-		});
+		sendWholeGameState(ws);
+		break;
+	case 'changePlayer':
+		handlePlayerChanged(ws, playerName, facebookId, facebookImage);
+		break;
+	case 'changeTeam':
+		handleTeamChanged(ws, teamId === 'one' ? 1 : 2);
 		break;
 	case 'guess':
-		promise.then(() => makeGuess(ws, payload.word));
+		makeGuess(ws, word);
 		break;
 	case 'giveClue':
-		promise.then(() => giveClue(ws, payload.word, payload.number));
+		giveClue(ws, word, number);
 		break;
 	case 'endTurn':
-		promise.then(() => endTurn(gameId));
+		endTurn(gameId);
 		break;
 	case 'startNewGame':
-		promise.then(() => handleStartNewGame(ws));
+		handleStartNewGame(ws);
 		break;
 	default:
 		break;
@@ -239,8 +242,6 @@ async function handleStartNewGame(ws) {
 }
 
 async function handlePlayerLeft(ws) {
-	sockets[ws.gameId].delete(ws);
-
 	if (sockets[ws.gameId].size) {
 		broadcast(ws.gameId, {
 			type: 'playerLeft',
@@ -254,65 +255,107 @@ async function handlePlayerLeft(ws) {
 
 	const promise = Promise.resolve();
 
-	if (ws.teamId && !ws.facebookId) {
+	if (ws.teamId && !ws.facebookId && !ws.token) {
 		promise.then(() => db.removePlayerFromTeam(ws.gameId, ws.playerId, ws.teamId));
 	}
 
-	return promise.then(() => {
-		ws.gameId = undefined;
-		ws.playerName = undefined;
-		ws.token = undefined;
-		ws.playerId = undefined;
-		ws.teamId = undefined;
-	});
+	return promise;
 }
 
-async function handleTeamChanged(ws, team, playerName, token, facebookId, facebookUrl) {
-	let teamId;
-	if (team) {
-		teamId = team === 'one' ? 1 : 2;
+async function handlePlayerChanged(ws, playerName, facebookId, facebookUrl) {
+	const previousPlayerId = ws.playerId;
+	const playerId = await db.setPlayer(playerName, facebookId, facebookUrl);
+
+	if (playerId === previousPlayerId) return Promise.resolve();
+
+	const promise = Promise.resolve();
+
+	if (previousPlayerId) {
+		// Let all clients know that player left
+		promise.then(() => handlePlayerLeft(ws));
 	}
 
-	return Promise.resolve().then(() => {
-		if (ws.teamId && ws.playerId) {
-			db.removePlayerFromTeam(ws.gameId, ws.playerId, ws.teamId, token);
-		}
-	}).then(async () => {
-		ws.playerId = await db.setPlayer(playerName, facebookId, facebookUrl);
-		ws.facebookId = facebookId;
+	return promise.then(async () => {
+		// Change the player details for this web socket
+		ws.playerId = playerId;
 		ws.playerName = playerName;
-		if (teamId || !ws.teamId) ws.teamId = await db.addPlayerToTeam(ws.gameId, ws.playerId, token, teamId);
+		ws.facebookId = facebookId;
+		ws.facebookUrl = facebookUrl;
 
-		console.log('playerJoined from handleTeamChanged', ws.playerId, playerName);
+		// Attempt to get the team for this player
+		const teamIdForPlayerId = await db.getTeamIdForPlayerId(ws.gameId, playerId);
+
+		// If they are not on a team already or the team does not match that for this web socket
+		// handle the change in teamId.
+		if (!teamIdForPlayerId || ws.teamId !== teamIdForPlayerId) {
+			return handleTeamChanged(ws, teamIdForPlayerId);
+		}
+
+		// Otherwise, just broadcast the new player joining
 		broadcast(ws.gameId, {
 			type: 'playerJoined',
 			payload: {
 				count: sockets[ws.gameId].size,
 				playerName: ws.playerName,
-				teamId: ws.teamId === 1 ? 'one' : 'two',
+				teamId: teamIdForPlayerId === 1 ? 'one' : 'two',
 			},
 		});
 
-		send(ws, {
-			type: 'teamChanged',
-			payload: {
-				teamId: ws.teamId === 1 ? 'one' : 'two',
-			},
-		});
+		return Promise.resolve();
+	});
+}
 
-		send(ws, {
-			type: 'words',
-			payload: {
-				gameId: ws.gameId,
-				words: await db.getWords(ws.gameId, ws.teamId),
-			},
-		});
+async function handleTeamChanged(ws, teamId) {
+	const teamIdForPlayerId = await db.getTeamIdForPlayerId(ws.gameId, ws.playerId);
+	// The desiredTeamId will be...
+	// 1) The teamId argument (if set) OR
+	// 2) The existing team for this player (if set) OR
+	// 3) An arbitrary team that will be assigned by calling db.addPlayerToTeam without a teamID
+	const desiredTeamId = teamId || teamIdForPlayerId;
+
+	const promise = Promise.resolve();
+
+	if (ws.teamId && ws.teamId !== desiredTeamId) {
+		promise.then(() => db.removePlayerFromTeam(ws.gameId, ws.playerId, ws.teamId, ws.token));
+	}
+
+	return promise.then(async () => {
+		const nextTeamId = await db.addPlayerToTeam(ws.gameId, ws.playerId, ws.token, desiredTeamId);
+
+		if (nextTeamId !== ws.teamId) {
+			ws.teamId = nextTeamId;
+
+			broadcast(ws.gameId, {
+				type: 'playerJoined',
+				payload: {
+					count: sockets[ws.gameId].size,
+					playerName: ws.playerName,
+					teamId: ws.teamId === 1 ? 'one' : 'two',
+				},
+			});
+
+			send(ws, {
+				type: 'teamChanged',
+				payload: {
+					teamId: ws.teamId === 1 ? 'one' : 'two',
+				},
+			});
+
+			send(ws, {
+				type: 'words',
+				payload: {
+					gameId: ws.gameId,
+					words: await db.getWords(ws.gameId, ws.teamId),
+				},
+			});
+		}
 	});
 }
 
 // NOTIFICATIONS (SENT SYNCRONOUSLY OVER WEB SOCKET & IOS PUSH NOTIFICATIONS SERVICE)
 
 function send(client, data) {
+	console.log('sending', data.type);
 	if (client.readyState === 1) {
 		client.send(JSON.stringify(Object.assign({ gameId: client.gameId }, data)));
 	}
@@ -522,15 +565,6 @@ app.get('/games', async (req, res) => {
 
 	return Promise.resolve(res.send(gameInfo));
 });
-
-app.get('/redis', (req, res) => {
-	const { gameId } = req.query;
-
-	db.setGame(gameId, new Game())
-		.then(() => db.getGame(gameId))
-		.then(result => res.send(result));
-});
-
 
 app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU', (req, res) => {
 	res.send('xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU.wcyPaoYEfPqL-uVIHthYuQAf46zGDhI2Dt6L-aP4veQ');

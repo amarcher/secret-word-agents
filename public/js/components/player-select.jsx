@@ -3,9 +3,9 @@ import PropTypes from 'prop-types';
 import FacebookLogin from 'react-facebook-login';
 import { connect } from 'react-redux';
 
-import { getActiveGameId, enterGame } from '../stores/game-store';
+import { getActiveGameId } from '../stores/game-store';
 import { changeTeamId, getTeamId } from '../stores/team-id-store';
-import { getPlayerName, setPlayerName, getFacebookId, getFacebookImage, setFacebookId } from '../stores/player-name-store';
+import { getPlayerName, setPlayerName, getFacebookId, getFacebookImage, setFacebookId, changePlayerDetails } from '../stores/player-name-store';
 
 const propTypes = {
 	changeTeamId: PropTypes.func.isRequired,
@@ -14,15 +14,13 @@ const propTypes = {
 	playerName: PropTypes.string,
 	facebookId: PropTypes.string,
 	facebookImage: PropTypes.string,
-	gameId: PropTypes.string,
 	setFacebookId: PropTypes.func.isRequired,
-	enterGame: PropTypes.func.isRequired,
+	changePlayerDetails: PropTypes.func.isRequired,
 };
 
 const defaultProps = {
 	teamId: '',
 	playerName: '',
-	gameId: undefined,
 	facebookId: undefined,
 	facebookImage: undefined,
 };
@@ -58,14 +56,15 @@ export class BasePlayerSelect extends Component {
 
 	onSubmit(e) {
 		e.preventDefault();
-		const { teamId } = this.props;
 		const { playerName } = this.state;
 
 		if (playerName) this.props.setPlayerName({ playerName });
-		this.props.changeTeamId({ teamId });
+		this.props.changePlayerDetails({ playerName });
 	}
 
 	renderBeNeutralButton() {
+		if (!this.props.teamId) return null;
+
 		return (
 			<button type="button" onClick={this.onChangePlayer}>
 				Be neutral
@@ -74,6 +73,8 @@ export class BasePlayerSelect extends Component {
 	}
 
 	renderEnterGameButton() {
+		if (this.props.teamId) return null;
+
 		return (
 			<button type="button" onClick={this.onChangePlayer}>
 				Enter game
@@ -82,7 +83,7 @@ export class BasePlayerSelect extends Component {
 	}
 
 	renderFacebookLoginButton() {
-		const { facebookId, facebookImage, gameId } = this.props;
+		const { facebookId, facebookImage } = this.props;
 
 		if (facebookId) {
 			return (
@@ -121,7 +122,11 @@ export class BasePlayerSelect extends Component {
 							facebookImage: image,
 						});
 
-						this.props.enterGame({ gameId, playerName });
+						this.props.changePlayerDetails({
+							playerName,
+							facebookId: id,
+							facebookImage: image,
+						});
 					}}
 					textButton=""
 					scope="public_profile"
@@ -159,17 +164,16 @@ BasePlayerSelect.propTypes = propTypes;
 BasePlayerSelect.defaultProps = defaultProps;
 
 const mapDispatchToProps = {
-	enterGame,
 	setPlayerName,
 	changeTeamId,
 	setFacebookId,
+	changePlayerDetails,
 };
 
 function mapStateToProps(state) {
 	const gameId = getActiveGameId(state);
 
 	return {
-		gameId,
 		teamId: getTeamId(state, gameId),
 		playerName: getPlayerName(state),
 		facebookId: getFacebookId(state),

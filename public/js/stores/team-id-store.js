@@ -1,7 +1,7 @@
 import { createAction, createReducer } from 'redux-act';
 import { changeTeam } from '../fetchers';
 import { getActiveGameId } from './game-store';
-import { getPlayerName, getFacebookId } from './player-name-store';
+import { getPlayerName, getFacebookId, getFacebookImage } from './player-name-store';
 
 export const setTeamId = createAction('Set team id');
 export const setPlayerName = createAction('Set player name');
@@ -34,6 +34,7 @@ export function changeTeamId({ teamId }) {
 			teamId,
 			playerName: getPlayerName(state),
 			facebookId: getFacebookId(state),
+			facebookImage: getFacebookImage(state),
 		});
 	};
 }
