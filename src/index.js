@@ -89,10 +89,8 @@ wss.on('connection', (ws) => {
 		console.log(`websocket connection closed with reasonCode: ${reasonCode} and description: ${description}`);
 		console.log(`after disconnect we now have ${wss.clients.size} total clients`);
 		if (ws.gameId && sockets[ws.gameId]) {
-			if (!ws.facebookId) {
-				const db = new RedisClient();
-				handlePlayerLeft(db, ws).then(() => db.quit);
-			}
+			const db = new RedisClient();
+			handlePlayerLeft(db, ws).then(() => db.quit);
 		}
 	});
 
@@ -260,7 +258,7 @@ async function handlePlayerLeft(db, ws) {
 
 	const promise = Promise.resolve();
 
-	if (ws.teamId) {
+	if (ws.teamId && !ws.facebookId) {
 		promise.then(() => db.removePlayerFromTeam(ws.gameId, ws.playerId, ws.teamId));
 	}
 
