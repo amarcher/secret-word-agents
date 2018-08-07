@@ -3,9 +3,11 @@ const redis = require('redis');
 
 bluebird.promisifyAll(redis);
 
+const client = redis.createClient(process.env.REDIS_URL);
+
 class RedisClient {
 	constructor() {
-		this.client = redis.createClient(process.env.REDIS_URL);
+		this.client = client;
 
 		this.client.on('error', (err) => {
 			console.log(`Redis error: ${err}`); // eslint-disable-line no-console
@@ -305,7 +307,7 @@ class RedisClient {
 	}
 
 	async quit() {
-		return this.client.quitAsync();
+		return Promise.resolve(); // this.client.quitAsync();
 	}
 }
 
