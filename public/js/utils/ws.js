@@ -29,7 +29,7 @@ function onConnect() {
 
 function onMessage({ data } = {}) {
 	const parsedData = JSON.parse(data);
-	console.log('ws event received', parsedData); // eslint-disable-line no-console
+	console.log(`ws event "${parsedData && parsedData.type}" received`, parsedData); // eslint-disable-line no-console
 	wsEvent(parsedData);
 }
 

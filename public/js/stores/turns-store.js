@@ -1,6 +1,6 @@
 import { createAction, createReducer } from 'redux-act';
 import { endTurn as submitEndTurn, giveClue as submitGiveClue } from '../fetchers';
-import { getPlayerId } from './player-id-store';
+import { getTeamId } from './team-id-store';
 import { getActiveGameId } from './game-store';
 import { AGENTS_PER_PLAYER } from '../rules/game';
 
@@ -79,7 +79,7 @@ export function giveClue({ word, number }) {
 
 		return submitGiveClue({
 			gameId,
-			player: getPlayerId(getState(), gameId),
+			teamId: getTeamId(getState(), gameId),
 			word,
 			number,
 		});

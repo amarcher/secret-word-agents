@@ -151,32 +151,38 @@ export class BaseEnterGame extends Component {
 
 		return (
 			<div className="enter-game-container">
-				{this.renderFacebookLoginButton()}
-				<div className="enter-game">
-					<h1 className="title">Dooler</h1>
-					<form onSubmit={this.onSubmit}>
-						<input
-							className="enter-game-input"
-							placeholder="Game Code"
-							onChange={this.onChangeGameId}
-							value={gameId}
-						/>
-						<input
-							className="enter-name-input"
-							placeholder="Your Name"
-							onChange={this.onChangeName}
-							value={name}
-						/>
-						<div>
-							<button className="enter-game-button" type="submit" disabled={!this.state.gameId}>
-								Enter
-							</button>
-						</div>
-					</form>
-
-					{this.renderGameSummaries()}
+				<div className="header header-flex-end">
+					<div className="player-select">
+						{this.renderFacebookLoginButton()}
+					</div>
 				</div>
-				{this.renderDownloadOnIOSLink()}
+				<div className="enter-game-subcontainer">
+					<div className="enter-game">
+						<h1 className="title">Dooler</h1>
+						<form onSubmit={this.onSubmit}>
+							<input
+								className="enter-game-input"
+								placeholder="Game Code"
+								onChange={this.onChangeGameId}
+								value={gameId}
+							/>
+							<input
+								className="enter-name-input"
+								placeholder="Your Name"
+								onChange={this.onChangeName}
+								value={name}
+							/>
+							<div>
+								<button className="enter-game-button" type="submit" disabled={!this.state.gameId}>
+									Enter
+								</button>
+							</div>
+						</form>
+
+						{this.renderGameSummaries()}
+					</div>
+					{this.renderDownloadOnIOSLink()}
+				</div>
 			</div>
 		);
 	}

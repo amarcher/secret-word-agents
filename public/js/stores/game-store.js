@@ -2,7 +2,7 @@ import { createAction, createReducer } from 'redux-act';
 import { fetchGame, guess, startNewGame, fetchGames } from '../fetchers';
 import { updateTurnsLeft } from './turns-store';
 import { clearPlayers } from './players-store';
-import { getPlayerId, setPlayerId } from './player-id-store';
+import { getTeamId, setTeamId } from './team-id-store';
 import { getFacebookId } from './player-name-store';
 import { TOTAL_AGENTS } from '../rules/game';
 import { isAgent } from '../rules/words';
@@ -79,7 +79,13 @@ export function enterGame({ gameId, playerName }) {
 		// until we have a full game object from web socket
 		if (!getGameById(getState(), gameId)) dispatch(addOrReplaceGame({ gameId }));
 		const facebookId = getFacebookId(getState());
-		return fetchGame({ gameId, playerName, facebookId });
+		const teamId = getTeamId(getState(), gameId);
+		return fetchGame({
+			gameId,
+			playerName,
+			facebookId,
+			teamId,
+		});
 	};
 }
 
@@ -87,8 +93,8 @@ export function makeGuess({ word }) {
 	return (dispatch, getState) => {
 		const state = getState();
 		const gameId = getActiveGameId(state);
-		const playerId = getPlayerId(state, gameId);
-		return guess({ gameId, word, player: playerId });
+		const teamId = getTeamId(state, gameId);
+		return guess({ gameId, word, teamId });
 	};
 }
 
@@ -107,7 +113,7 @@ export function getGamesViaApi() {
 			if (games) {
 				dispatch(updateGames(games));
 				Object.values(games).forEach((game) => {
-					dispatch(setPlayerId(game));
+					dispatch(setTeamId(game));
 					dispatch(updateTurnsLeft(game));
 					dispatch(clearPlayers(game));
 				});

@@ -1,32 +1,37 @@
 import { send } from './utils/ws';
 import { get } from './utils/ajax';
 
-export function fetchGame({ gameId, playerName, facebookId } = {}) {
+export function fetchGame({
+	gameId,
+	playerName,
+	facebookId,
+	teamId,
+} = {}) {
 	send({
 		type: 'words',
 		gameId,
-		payload: { playerName, facebookId },
+		payload: { playerName, facebookId, teamId },
 	});
 }
 
-export function guess({ gameId, word, player } = {}) {
+export function guess({ gameId, word, teamId } = {}) {
 	send({
 		gameId,
 		type: 'guess',
-		payload: { word, player },
+		payload: { word, teamId },
 	});
 }
 
-export function changePlayer({
+export function changeTeam({
 	gameId,
-	player,
+	teamId,
 	playerName,
 	facebookId,
 }) {
 	send({
 		gameId,
-		type: 'changePlayer',
-		payload: { player, playerName, facebookId },
+		type: 'changeTeam',
+		payload: { teamId, playerName, facebookId },
 	});
 }
 
@@ -39,12 +44,12 @@ export function endTurn({ gameId } = {}) {
 }
 
 export function giveClue({
-	gameId, player, word, number,
+	gameId, teamId, word, number,
 } = {}) {
 	send({
 		gameId,
 		type: 'giveClue',
-		payload: { player, word, number },
+		payload: { teamId, word, number },
 	});
 }
 

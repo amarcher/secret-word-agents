@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import { isAgent, isAssasin, isGuessed } from '../rules/words';
 
 import { getActiveGameId, makeGuess } from '../stores/game-store';
-import { getPlayerId } from '../stores/player-id-store';
+import { getTeamId } from '../stores/team-id-store';
 
 const propTypes = {
 	word: PropTypes.string.isRequired,
@@ -14,14 +14,14 @@ const propTypes = {
 		playerOne: PropTypes.string,
 		playerTwo: PropTypes.string,
 	}).isRequired,
-	playerId: PropTypes.string,
+	teamId: PropTypes.string,
 	makeGuess: PropTypes.func.isRequired,
 	guessedThisTurn: PropTypes.bool,
 };
 
 const defaultProps = {
 	role: '',
-	playerId: '',
+	teamId: '',
 	guessedThisTurn: false,
 };
 
@@ -36,17 +36,17 @@ export class BaseWord extends Component {
 		e.preventDefault();
 
 		const {
-			word, revealed, role, playerId,
+			word, revealed, role, teamId,
 		} = this.props;
 
-		if (role && !isGuessed(revealed, playerId)) {
+		if (role && !isGuessed(revealed, teamId)) {
 			this.props.makeGuess({ word });
 		}
 	}
 
 	render() {
 		const {
-			word, revealed, role, playerId, guessedThisTurn,
+			word, revealed, role, teamId, guessedThisTurn,
 		} = this.props;
 
 		const className = classNames('word', {
@@ -57,13 +57,13 @@ export class BaseWord extends Component {
 			'my-agent': role === 'AGENT',
 			'my-non-agent': role === 'NON_AGENT',
 			'my-assasin': role === 'ASSASIN',
-			guessed: isGuessed(revealed, playerId),
+			guessed: isGuessed(revealed, teamId),
 			neutral: !role,
 			'guessed-this-turn': guessedThisTurn,
 		});
 
 		return (
-			<button type="button" className={className} onClick={this.onClick} disabled={!role || isGuessed(revealed, playerId)}>
+			<button type="button" className={className} onClick={this.onClick} disabled={!role || isGuessed(revealed, teamId)}>
 				{word}
 			</button>
 		);
@@ -75,7 +75,7 @@ function mapStateToProps(state) {
 	const gameId = getActiveGameId(state);
 
 	return {
-		playerId: getPlayerId(state, gameId),
+		teamId: getTeamId(state, gameId),
 	};
 }
 

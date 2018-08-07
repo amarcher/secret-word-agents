@@ -1,11 +1,12 @@
 /* eslint-disable no-console, no-use-before-define, no-param-reassign */
 
-const Game = require('./game');
 const iosNotificationService = require('./push-notifications');
 const express = require('express');
 const bodyParser = require('body-parser');
 const WebSocketServer = require('ws').Server;
 const http = require('http');
+const Game = require('./game');
+const RedisClient = require('./redis');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,11 +16,20 @@ app.use(express.static('public'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// GAME DATA
+/**
+ * ACTIVE CONNECTIONS
+ *
+ * In addition to its own properties, each web socket connection (or "ws" for short)
+ * may have the following additional proprerties stored on it for convenience:
+ *
+ * ws.gameId		-- the gameId the socket is subscribed to
+ * ws.playerId		-- the playerId from our Redis store of the connected player
+ * ws.teamId		-- the teamId (either: 1 or 2 if defined)
+ * ws.facebookId	-- the facebookId for the player
+ * ws.playerName	-- the name of the player
+*/
 
-const games = {};
 const sockets = {};
-const facebookIds = {};
 
 
 // START SERVER
@@ -31,8 +41,16 @@ server.listen(port, () => {
 });
 
 
-// Ping all active clients every thirty seconds
+/**
+ * PING ALL ACTIVE CONNECTIONS EVERY 30 SECONDS
+ *
+ * Many browsers self-close web sockets, but pinging them every thirty seconds keeps them open.
+ * If the client disappears without closing our connection, we'll be able to close it if we don't get a pong back.
+ */
+
+
 const noop = () => {};
+const THIRTY_SECONDS = 30 * 1000;
 setInterval(() => {
 	wss.clients.forEach((ws) => {
 		if (ws.isAlive === false) {
@@ -43,10 +61,14 @@ setInterval(() => {
 		ws.isAlive = false;
 		ws.ping(noop);
 	});
-}, 30000);
+}, THIRTY_SECONDS);
 
 
-// HANDLE INCOMING CONNECTIONS
+/**
+ * HANDLE INCOMING CONNECTIONS
+ *
+ * Set up listeners for events (pong, message, close, and error) so that we can respond to requests over the socket.
+ */
 
 wss.on('connection', (ws) => {
 	ws.isAlive = true;
@@ -67,200 +89,234 @@ wss.on('connection', (ws) => {
 		console.log(`websocket connection closed with reasonCode: ${reasonCode} and description: ${description}`);
 		console.log(`after disconnect we now have ${wss.clients.size} total clients`);
 		if (ws.gameId && sockets[ws.gameId]) {
-			handlePlayerLeft(ws);
+			if (!ws.facebookId) {
+				const db = new RedisClient();
+				handlePlayerLeft(db, ws).then(() => db.quit);
+			}
 		}
 	});
 
 	ws.on('error', (info) => {
-		// NOTE: Unhandled errors cause the app to crash... So we need this!
+		// NOTE: Unhandled errors cause the whole app to crash... So we need this!
 		console.log('websocket error', info && info.message);
 	});
 });
 
-function handleRequest(ws, data) {
+
+/**
+ * HANDLE WEB SOCKET REQUESTS
+ *
+ * @param  {Object} ws - the web socket object itself
+ * @param  {Object} data - the data that came in with the request
+ * @param  {String} data.gameId - gameId this request is about
+ * @param  {String} data.type - type of request, valid types are enumerated in the switch statement
+ * @param  {Object} data.payload - payload of info pertaining to the request
+ * @return {void}
+ */
+async function handleRequest(ws, data) {
 	const { gameId, type, payload = {} } = data;
 	if (!gameId) return;
 
-	const isDifferentGameId = ws.gameId && ws.gameId !== gameId && sockets[ws.gameId];
-	if (isDifferentGameId) {
-		// player has joined a different game, so we boot them from their existing game
-		handlePlayerLeft(ws);
-	}
+	// If we don't have attributes assigned to this web socket connection, assign them now.
+	if (!ws.gameId) ws.gameId = gameId;
 
-	if (!sockets[gameId] || !sockets[gameId].has(ws)) {
-		// player has entered game they were not in before
-		handlePlayerJoined(ws, gameId, payload.playerName, payload.token, payload.facebookId);
-	}
-
-	switch (type) {
-	case 'words':
-		handlePlayerChanged(ws, payload.player, payload.playerName, payload.token, payload.facebookId);
-		sendWholeGameState(ws, gameId);
-		break;
-	case 'guess':
-		makeGuess(gameId, payload.word, payload.player);
-		break;
-	case 'changePlayer':
-		handlePlayerChanged(ws, payload.player, payload.playerName, payload.token, payload.facebookId);
-		break;
-	case 'giveClue':
-		giveClue(gameId, payload.player, payload.word, payload.number);
-		break;
-	case 'endTurn':
-		endTurn(gameId);
-		break;
-	case 'startNewGame':
-		handleStartNewGame(gameId);
-		break;
-	default:
-		break;
-	}
-}
-
-function handleStartNewGame(gameId) {
-	const game = getOrCreateGame(gameId);
-	const playerOneName = game.getPlayerName('one');
-	const playerTwoName = game.getPlayerName('two');
-	const playerOneToken = playerOneName && game.getTokenForPlayer('one');
-	const playerTwoToken = playerTwoName && game.getTokenForPlayer('two');
-	const playerOneFacebookId = playerOneName && game.getFacebookIdForPlayer('one');
-	const playerTwoFacebookId = playerTwoName && game.getFacebookIdForPlayer('two');
-
-	games[gameId] = new Game();
-
-	if (playerOneName) games[gameId].setPlayerName(playerOneName, 'one', playerOneToken, playerOneFacebookId);
-	if (playerTwoToken) games[gameId].setPlayerName(playerTwoName, 'two', playerTwoToken, playerTwoFacebookId);
-
-	sockets[gameId].forEach((client) => {
-		sendWholeGameState(client, gameId);
-	});
-}
-
-function handlePlayerLeft(ws) {
-	sockets[ws.gameId].delete(ws);
-
-	broadcast(ws.gameId, {
-		type: 'playerLeft',
-		payload: {
-			count: sockets[ws.gameId].size,
-			playerName: ws.playerName,
-		},
+	const db = new RedisClient();
+	const promise = new Promise((resolve) => {
+		if (!sockets[gameId]) {
+			sockets[gameId] = new Set([ws]);
+			// Because we have no socket for this gameId, it's possible that we've never
+			// created a game for the gameId either. Create one if we need to before continuing.
+			getOrCreateGame(db, gameId).then(resolve);
+		} else if (!sockets[gameId].has(ws)) {
+			// We have other connected users, so replay those other players "joining"
+			sockets[gameId].forEach((client) => {
+				if (client.readyState === 1) {
+					console.log('playerJoined from handleRequest', client.playerId, client.playerName);
+					send(ws, {
+						type: 'playerJoined',
+						payload: {
+							count: sockets[gameId].size,
+							playerName: client.playerName,
+							teamId: client.teamId === 1 ? 'one' : 'two',
+						},
+					});
+				}
+			});
+			// Then add this connection
+			sockets[gameId].add(ws);
+			resolve();
+		} else {
+			resolve();
+		}
 	});
 
-	// Make the player's slot available again, unless we have a token or a facebook id!
-	if (!getOrCreateGame(ws.gameId).getTokenForPlayer(ws.player) && !getOrCreateGame(ws.gameId).getFacebookIdForPlayer(ws.player)) {
-		getOrCreateGame(ws.gameId).setPlayerName('', ws.player);
-	}
+	if (type === 'changeTeam') {
+		promise.then(() => {
+			const {
+				teamId,
+				playerName,
+				token,
+				facebookId,
+				facebookUrl,
+			} = payload;
+			handleTeamChanged(db, ws, teamId, playerName, token, facebookId, facebookUrl);
+		});
+	} else if (type === 'words') {
+		promise.then(() => {
+			if (payload.playerName && (!ws.playerId || (!ws.facebookId && payload.facebookId))) {
+				const {
+					teamId,
+					playerName,
+					token,
+					facebookId,
+					facebookUrl,
+				} = payload;
+				return handleTeamChanged(db, ws, teamId, playerName, token, facebookId, facebookUrl);
+			}
+			return Promise.resolve();
+		}).then(async () => {
+			if (payload.playerName && ws.playerName !== payload.playerName) {
+				ws.playerName = payload.playerName;
+			}
 
-	ws.gameId = undefined;
-	ws.player = undefined;
-	ws.playerName = undefined;
-}
+			if (ws.playerId && !ws.teamId) {
+				ws.teamId = await db.getTeamIdForPlayerId(gameId, ws.playerId)
+					|| await db.addPlayerToTeam(gameId, ws.playerId, payload.token);
 
-function handlePlayerJoined(ws, gameId, playerName, token, facebookId) {
-	if (sockets[gameId]) {
-		// Tell the client who else is connected
-		sockets[gameId].forEach((client) => {
-			if (client.readyState === 1) {
-				send(ws, {
+				console.log('adding player to team', ws.teamId);
+
+				console.log('playerJoined from handleRequest lower down', ws.playerId, ws.playerName);
+
+				broadcast(ws.gameId, {
 					type: 'playerJoined',
 					payload: {
-						count: sockets[gameId].size,
-						playerName: client.playerName,
-						player: client.player,
+						count: sockets[ws.gameId].size,
+						playerName: ws.playerName,
+						teamId: ws.teamId === 1 ? 'one' : 'two',
 					},
 				});
 			}
 		});
-
-		sockets[gameId].add(ws);
-	} else {
-		sockets[gameId] = new Set([ws]);
 	}
 
-	ws.gameId = gameId;
-	ws.playerName = playerName;
-
-	if (facebookIds[facebookId]) {
-		facebookIds[facebookId].add(gameId);
-	} else if (facebookId) {
-		facebookIds[facebookId] = new Set([gameId]);
-	}
-
-
-	const player = getOrCreateGame(gameId).setPlayerName(playerName, undefined, token, facebookId);
-
-	broadcast(gameId, {
-		type: 'playerJoined',
-		payload: {
-			count: sockets[gameId].size,
-			playerName,
-			player,
-		},
-	});
-
-	if (ws.player !== player) {
-		ws.player = player;
-
-		send(ws, {
-			type: 'playerChanged',
-			payload: {
-				player,
-			},
+	switch (type) {
+	case 'words':
+		promise.then(() => {
+			console.log('sending whole games state');
+			return sendWholeGameState(db, ws);
 		});
+		break;
+	case 'guess':
+		promise.then(() => makeGuess(db, ws, payload.word));
+		break;
+	case 'giveClue':
+		promise.then(() => giveClue(db, ws, payload.word, payload.number));
+		break;
+	case 'endTurn':
+		promise.then(() => endTurn(db, gameId));
+		break;
+	case 'startNewGame':
+		promise.then(() => handleStartNewGame(db, ws));
+		break;
+	default:
+		break;
 	}
+
+	promise.then(() => db.quit).catch(() => db.quit);
 }
 
-function handlePlayerChanged(ws, player, playerName, token, facebookId) {
-	const game = getOrCreateGame(ws.gameId);
+async function handleStartNewGame(db, ws) {
+	const game = new Game();
+	return db.setGame(ws.gameId, game).then(async () => {
+		if (sockets[ws.gameId]) {
+			sockets[ws.gameId].forEach((client) => {
+				sendWholeGameState(db, client);
+			});
+		}
 
-	if (ws.playerName === playerName && player === ws.player && facebookId === game.getFacebookIdForPlayer(player)) return;
+		const otherTeamId = ws.teamId === 1 ? 2 : 1;
+		const tokens = await db.getTokensOnTeam(ws.gameId, otherTeamId);
 
-	if (typeof playerName !== 'undefined') {
+		iOSNotify(ws.gameId, tokens, {
+			title: 'A new game has started',
+			body: `${ws.playerName} started a new game with you at "${ws.gameId}"`,
+		});
+	});
+}
+
+async function handlePlayerLeft(db, ws) {
+	sockets[ws.gameId].delete(ws);
+
+	if (sockets[ws.gameId].size) {
 		broadcast(ws.gameId, {
 			type: 'playerLeft',
 			payload: {
 				count: sockets[ws.gameId].size,
 				playerName: ws.playerName,
+				playerId: ws.playerId,
 			},
 		});
+	}
 
-		player = game.setPlayerName(playerName, ws.player, token, facebookId);
+	const promise = Promise.resolve();
 
-		if (facebookIds[facebookId]) {
-			facebookIds[facebookId].add(ws.gameId);
-		} else if (facebookId) {
-			facebookIds[facebookId] = new Set([ws.gameId]);
+	if (ws.teamId) {
+		promise.then(() => db.removePlayerFromTeam(ws.gameId, ws.playerId, ws.teamId));
+	}
+
+	return promise.then(() => {
+		ws.gameId = undefined;
+		ws.playerName = undefined;
+		ws.token = undefined;
+		ws.playerId = undefined;
+		ws.teamId = undefined;
+	});
+}
+
+async function handleTeamChanged(db, ws, team, playerName, token, facebookId, facebookUrl) {
+	let teamId;
+	if (team) {
+		teamId = team === 'one' ? 1 : 2;
+	}
+
+	return Promise.resolve().then(() => {
+		if (ws.teamId && ws.playerId) {
+			db.removePlayerFromTeam(ws.gameId, ws.playerId, ws.teamId, token);
 		}
-
+	}).then(async () => {
+		ws.playerId = await db.setPlayer(playerName, facebookId, facebookUrl);
+		ws.facebookId = facebookId;
 		ws.playerName = playerName;
+		if (teamId || !ws.teamId) ws.teamId = await db.addPlayerToTeam(ws.gameId, ws.playerId, token, teamId);
 
+		console.log('playerJoined from handleTeamChanged', ws.playerId, playerName);
 		broadcast(ws.gameId, {
 			type: 'playerJoined',
 			payload: {
 				count: sockets[ws.gameId].size,
 				playerName: ws.playerName,
+				teamId: ws.teamId === 1 ? 'one' : 'two',
 			},
 		});
-	}
 
-	ws.player = player;
+		send(ws, {
+			type: 'teamChanged',
+			payload: {
+				teamId: ws.teamId === 1 ? 'one' : 'two',
+			},
+		});
 
-	send(ws, {
-		type: 'playerChanged',
-		payload: {
-			player,
-		},
-	});
-
-	send(ws, {
-		type: 'words',
-		payload: {
-			gameId: ws.gameId,
-			words: getWordsForPlayer(ws.gameId, ws.player),
-		},
+		send(ws, {
+			type: 'words',
+			payload: {
+				gameId: ws.gameId,
+				words: await db.getWords(ws.gameId, ws.teamId),
+			},
+		});
 	});
 }
+
+// NOTIFICATIONS (SENT SYNCRONOUSLY OVER WEB SOCKET & IOS PUSH NOTIFICATIONS SERVICE)
 
 function send(client, data) {
 	if (client.readyState === 1) {
@@ -278,7 +334,9 @@ function broadcast(gameId, data) {
 	}
 }
 
-function iOSNotify(gameId, playerId, data) {
+function iOSNotify(gameId, tokens, data) {
+	if (!tokens || !tokens.length) return;
+
 	const dataToSend = Object.assign({}, data, {
 		topic: 'org.reactjs.native.example.Dooler',
 		badge: 1,
@@ -286,32 +344,33 @@ function iOSNotify(gameId, playerId, data) {
 		custom: { gameId },
 	});
 
-	const game = getOrCreateGame(gameId);
-	const registrationIds = playerId ?
-		game.getTokenForPlayer(playerId) :
-		[game.getTokenForPlayer('one'), game.getTokenForPlayer('two')].filter(token => !!token);
-
-	iosNotificationService.send(registrationIds, dataToSend);
+	iosNotificationService.send(tokens, dataToSend);
 }
 
-function getOrCreateGame(gameId) {
-	if (games[gameId]) {
-		return games[gameId];
+
+// UTILITY FUNCTIONS
+
+async function getOrCreateGame(db, gameId) {
+	const gameData = await db.getGame(gameId);
+	const game = new Game(gameData);
+
+	if (!gameData) {
+		return db.setGame(gameId, game).then(() => game);
 	}
 
-	games[gameId] = new Game();
-
-	return games[gameId];
+	return game;
 }
 
-function giveClue(gameId, player, word, number) {
-	const game = getOrCreateGame(gameId);
-	const turnsLeftBefore = game.getTurnsLeft();
-	const clue = game.giveClueForTurn(player, word, number);
-	const turnsLeftAfter = game.getTurnsLeft();
+
+// ACTION HANDLERS
+
+async function giveClue(db, ws, clueWord, clueNumber) {
+	const turnsLeftBefore = await db.getTurnsLeft(ws.gameId);
+	const turnsLeftAfter = await db.setTurn(ws.gameId, ws.teamId, clueWord, clueNumber, clueNumber)
+		.then(() => db.getTurnsLeft(ws.gameId));
 
 	if (turnsLeftBefore !== turnsLeftAfter) {
-		broadcast(gameId, {
+		broadcast(ws.gameId, {
 			type: 'turns',
 			payload: {
 				turnsLeft: turnsLeftAfter,
@@ -319,126 +378,112 @@ function giveClue(gameId, player, word, number) {
 		});
 	}
 
-	const otherPlayer = player === 'one' ? 'two' : 'one';
-	iOSNotify(gameId, otherPlayer, {
+	const otherTeamId = ws.teamId === 'one' ? 2 : 1;
+	const tokens = await db.getTokensOnTeam(ws.gameId, otherTeamId);
+
+	iOSNotify(ws.gameId, tokens, {
 		title: 'A clue has been given in your game',
-		body: `${game.getPlayerName(player)} gave the clue "${word}" - ${number}`,
+		body: `${ws.playerName} gave the clue "${clueWord}" - ${clueNumber}`,
 	});
 
-	broadcast(gameId, {
+	broadcast(ws.gameId, {
 		type: 'clueGiven',
 		payload: {
-			playerGivingClue: clue.playerGivingClue,
-			number: clue.guessesLeft,
-			word: clue.clueWord,
+			playerGivingClue: otherTeamId === 1 ? 'playerOne' : 'playerTwo',
+			number: clueNumber,
+			word: clueWord,
 		},
 	});
 }
 
-function endTurn(gameId) {
-	const game = getOrCreateGame(gameId);
-	const turnsLeftBefore = game.getTurnsLeft();
-	game.endTurn();
-	const turnsLeftAfter = game.getTurnsLeft();
-
-	if (turnsLeftBefore !== turnsLeftAfter) {
-		broadcast(gameId, {
+async function endTurn(db, gameId) {
+	const turnsLeft = await db.getTurnsLeft(gameId);
+	return db.setTurnsLeft(gameId, turnsLeft - 1)
+		.then(() => db.setTurn(gameId))
+		.then(() => broadcast(gameId, {
 			type: 'turns',
 			payload: {
-				turnsLeft: turnsLeftAfter,
+				turnsLeft: turnsLeft - 1,
 			},
-		});
+		}));
+}
+
+async function getGameForPlayerId(db, gameId, playerId) {
+	const teamId = await db.getTeamIdForPlayerId(gameId, playerId);
+	const words = await db.getWords(gameId, teamId);
+	let team;
+	if (teamId) {
+		team = teamId === 1 ? 'playerOne' : 'playerTwo';
 	}
-}
-
-function getWordsForPlayer(gameId, player) {
-	const game = getOrCreateGame(gameId);
-	return player ? game.getViewForPlayer(player) : game.getWords();
-}
-
-function getGameForFacebookId(gameId, facebookId) {
-	const game = getOrCreateGame(gameId);
-	const player = game.getPlayerWithFacebookId(facebookId);
-	const words = player ? game.getViewForPlayer(player) : game.getWords();
 
 	return {
 		words,
-		player,
-		turnsLeft: game.getTurnsLeft(),
+		teamId: team,
+		turnsLeft: await db.getTurnsLeft(gameId),
 	};
 }
 
-function makeGuess(gameId, word, player) {
-	const game = getOrCreateGame(gameId);
+async function makeGuess(db, ws, word) {
+	const { clueWord } = await db.getTurn(ws.gameId);
+	const guess = await db.makeGuess(ws.gameId, ws.teamId, word);
 
-	const clueWord = game.currentTurn && game.currentTurn.clueWord;
-	const turnsLeftBefore = game.getTurnsLeft();
-	const guess = game.guess(word, player);
-	const turnsLeftAfter = game.getTurnsLeft();
+	if (!guess) return;
 
-	if (guess && guess.playerGuessingChanged) {
-		broadcast(gameId, {
-			type: 'turns',
-			payload: {
-				turnsLeft: turnsLeftBefore - 1,
-			},
-		});
-	}
-
-	broadcast(gameId, {
+	broadcast(ws.gameId, {
 		type: 'guess',
-		payload: Object.assign({}, guess, { gameId }),
+		payload: Object.assign({}, guess, { gameId: ws.gameId }),
 	});
 
-	const otherPlayer = player === 'one' ? 'two' : 'one';
 	const clueText = clueWord ? ` for the clue "${clueWord}"` : '';
-	iOSNotify(gameId, otherPlayer, {
+	const otherTeamId = ws.teamId === 1 ? 2 : 1;
+	const tokens = await db.getTokensOnTeam(ws.gameId, otherTeamId);
+	const { playerName } = await db.getPlayer(ws.playerId);
+
+	iOSNotify(ws.gameId, tokens, {
 		title: 'A guess has been made in your game',
-		body: `${game.getPlayerName(player)} guessed "${word}"${clueText}`,
+		body: `${playerName} guessed "${word}"${clueText}`,
 	});
 
-	if ((guess && !guess.playerGuessingChanged && turnsLeftBefore !== turnsLeftAfter) ||
-		turnsLeftBefore - 1 > turnsLeftAfter) {
-		broadcast(gameId, {
-			type: 'turns',
-			payload: {
-				turnsLeft: turnsLeftAfter,
-			},
-		});
-	}
-}
-
-function maybeSendCurrentClue(ws, gameId) {
-	const game = getOrCreateGame(gameId);
-	const clue = game.getCurrentClue();
-
-	if (!clue) return;
-
-	send(ws, {
-		type: 'clueGiven',
+	broadcast(ws.gameId, {
+		type: 'turns',
 		payload: {
-			playerGivingClue: clue.playerGivingClue,
-			number: clue.guessesLeft,
-			word: clue.clueWord,
+			turnsLeft: guess.turnsLeft,
 		},
 	});
 }
 
-function sendWholeGameState(ws, gameId) {
+async function maybeSendCurrentClue(db, ws) {
+	const { clueGiverTeamId, clueWord, guessesLeft } = await db.getTurn(ws.gameId) || {};
+
+	if (!clueWord) return;
+
+	const playerGivingClue = clueGiverTeamId === 1 ? 'playerOne' : 'playerTwo';
+
+	send(ws, {
+		type: 'clueGiven',
+		payload: {
+			playerGivingClue,
+			number: guessesLeft,
+			word: clueWord,
+		},
+	});
+}
+
+async function sendWholeGameState(db, ws) {
 	send(ws, {
 		type: 'words',
 		payload: {
-			gameId,
-			words: getWordsForPlayer(gameId, ws.player),
+			gameId: ws.gameId,
+			words: await db.getWords(ws.gameId, ws.teamId),
 		},
 	});
 	send(ws, {
 		type: 'turns',
 		payload: {
-			turnsLeft: getOrCreateGame(gameId).getTurnsLeft(),
+			turnsLeft: await db.getTurnsLeft(ws.gameId),
 		},
 	});
-	maybeSendCurrentClue(ws, gameId);
+	maybeSendCurrentClue(db, ws);
 }
 
 // ROUTES
@@ -455,23 +500,43 @@ app.use((req, res, next) => {
 
 app.get('*.(gif|png|jpe?g|svg|ico|app|ipa|plist)', express.static('public/img'));
 
-app.get('/games', (req, res) => {
+app.get('/games', async (req, res) => {
 	const { facebookId } = req.query;
 
-	let gameIds = [];
-	if (facebookIds[facebookId]) {
-		gameIds = Array.from(facebookIds[facebookId]);
+	if (!facebookId) {
+		return Promise.resolve(res.send([]));
 	}
 
-	console.log(`found ${gameIds.length} games for facebookId ${facebookId}`);
+	const db = new RedisClient();
+	const playerId = await db.getPlayerIdForFacebookId(facebookId);
 
-	const gameInfo = gameIds.reduce((allGames, gameId) => {
-		allGames[gameId] = getGameForFacebookId(gameId, facebookId);
+	if (!playerId) {
+		console.log(`Found no playerId for facebookId ${facebookId}`);
+		return Promise.resolve(res.send([]));
+	}
+
+	const gameIds = await db.getGamesForPlayer(playerId);
+
+	console.log(`Found ${gameIds.length} games for facebookId ${facebookId}`);
+
+	const gameInfo = await gameIds.reduce(async (allGames, gameId) => {
+		allGames[gameId] = await getGameForPlayerId(db, gameId, playerId);
 		return allGames;
 	}, {});
 
-	res.send(gameInfo);
+	return Promise.resolve(res.send(gameInfo));
 });
+
+app.get('/redis', (req, res) => {
+	const { gameId } = req.query;
+
+	const db = new RedisClient();
+	db.setGame(gameId, new Game())
+		.then(() => db.getGame(gameId))
+		.then(result => res.send(result))
+		.then(() => db.quit());
+});
+
 
 app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU', (req, res) => {
 	res.send('xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU.wcyPaoYEfPqL-uVIHthYuQAf46zGDhI2Dt6L-aP4veQ');

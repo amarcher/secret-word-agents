@@ -3,25 +3,25 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
 import { endTurn, getGuessesLeftForGameId, getTurnsLeftForGameId } from '../stores/turns-store';
-import { getPlayerId } from '../stores/player-id-store';
+import { getTeamId } from '../stores/team-id-store';
 import { getActiveGameId } from '../stores/game-store';
 
 const propTypes = {
 	endTurn: PropTypes.func.isRequired,
-	playerId: PropTypes.string,
+	teamId: PropTypes.string,
 	guessesLeft: PropTypes.number,
 	turnsLeft: PropTypes.number,
 };
 
 const defaultProps = {
-	playerId: undefined,
+	teamId: undefined,
 	guessesLeft: undefined,
 	turnsLeft: 0,
 };
 
 export class BaseEndTurn extends Component {
 	render() {
-		if (!this.props.playerId || this.props.guessesLeft === 0 || this.props.turnsLeft < 1) return null;
+		if (!this.props.teamId || this.props.guessesLeft === 0 || this.props.turnsLeft < 1) return null;
 
 		return (
 			<button className="end-turn" type="button" onClick={this.props.endTurn}>
@@ -41,7 +41,7 @@ function mapStateToProps(state) {
 
 	return {
 		guessesLeft: getGuessesLeftForGameId(state, gameId),
-		playerId: getPlayerId(state, gameId),
+		teamId: getTeamId(state, gameId),
 		turnsLeft: getTurnsLeftForGameId(state, gameId),
 	};
 }
