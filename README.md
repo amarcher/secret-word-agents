@@ -18,8 +18,12 @@ Then visit localhost:3000/
 
 ### Redis Data Structure
 
+```
 game:{$gameId} --> Hash of game state
 	agentsLeft
+	agentsLeftTeam1
+	agentsLeftTeam2
+	turnsLeft
 
 game:{$gameId}:team:1 --> Set of IDs of players on team one
 game:{$gameId}:team:2 --> Set of IDs of players on team two
@@ -28,7 +32,6 @@ game:{$gameId}:tokens:2 --> Set of tokens for players on team two
 game:{$gameId}:words --> Hash of words present in the game
 	[$word] --> {$role1},{$role2},{$revealed1},{$revealed2}
 game:{$gameId}:turn --> Hash of current turn data for the game
-	turnsLeft
 	clueGiverTeamId
 	clueWord
 	clueNumber
@@ -43,3 +46,4 @@ player:{$playerId} --> Hash of player info
 	facebookUrl --> String photo URL
 
 player:{$playerId}:games --> Set of gameIds for which this player is on a team
+```
