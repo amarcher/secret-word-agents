@@ -35,6 +35,24 @@ export function changeTeam({
 	});
 }
 
+export function changePlayer({
+	gameId,
+	playerName,
+	facebookId,
+	facebookImage,
+}) {
+	send({
+		gameId,
+		type: 'changePlayer',
+		payload: {
+			gameId,
+			playerName,
+			facebookId,
+			facebookImage,
+		},
+	});
+}
+
 export function endTurn({ gameId } = {}) {
 	send({
 		gameId,
