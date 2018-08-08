@@ -87,11 +87,9 @@ export class BaseEnterGame extends Component {
 	checkIfExists() {
 		const { gameId } = this.state;
 
-		if (!gameId) return;
-
 		checkIfExistsDebounced({ gameId }).then(({ exists: gameExists, activePlayers } = {}) => {
-			this.setState(() => ({
-				showGameExists: true,
+			this.setState(prevState => ({
+				showGameExists: prevState.gameId && true,
 				gameExists,
 				activePlayers,
 			}));
