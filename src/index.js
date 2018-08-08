@@ -145,7 +145,7 @@ async function handleInitialRequest(ws, data) {
 						payload: {
 							count: sockets[gameId].size,
 							playerName: client.playerName,
-							teamId: client.teamId && client.teamId === 1 ? 'one' : 'two',
+							teamId: client.teamId && (client.teamId === 1 ? 'one' : 'two'),
 						},
 					});
 				}
