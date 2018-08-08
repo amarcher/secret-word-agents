@@ -164,10 +164,16 @@ async function handleInitialRequest(ws, data) {
 			facebookImage,
 		} = payload;
 
-		if (token && !ws.token) ws.token = token;
+		const prevToken = ws.token;
+		if (token && !prevToken) ws.token = token;
 
-		const isImplicitPlayerChange = type !== 'playerChange' && (ws.playerName !== playerName || ws.facebookId !== facebookId);
-		if (isImplicitPlayerChange) return handlePlayerChanged(ws, playerName, facebookId, facebookImage);
+		const isImplicitPlayerChange = type !== 'playerChange' && (
+			(playerName && playerName !== ws.playerName)
+			|| (facebookId && facebookId !== ws.facebookId)
+			|| (token && token !== prevToken)
+		);
+
+		if (isImplicitPlayerChange) return handlePlayerChanged(ws, playerName, facebookId, facebookImage, token);
 
 		return Promise.resolve();
 	});
@@ -193,6 +199,7 @@ async function handleRequest(ws, data) {
 		facebookImage,
 		word,
 		number,
+		token,
 	} = payload;
 
 	switch (type) {
@@ -200,7 +207,7 @@ async function handleRequest(ws, data) {
 		sendWholeGameState(ws);
 		break;
 	case 'changePlayer':
-		handlePlayerChanged(ws, playerName, facebookId, facebookImage);
+		handlePlayerChanged(ws, playerName, facebookId, facebookImage, token);
 		break;
 	case 'changeTeam':
 		handleTeamChanged(ws, teamId === 'one' ? 1 : 2);
@@ -262,9 +269,9 @@ async function handlePlayerLeft(ws) {
 	return promise;
 }
 
-async function handlePlayerChanged(ws, playerName, facebookId, facebookUrl) {
+async function handlePlayerChanged(ws, playerName, facebookId, facebookUrl, token) {
 	const previousPlayerId = ws.playerId;
-	const playerId = await db.setPlayer(playerName, facebookId, facebookUrl);
+	const playerId = await db.setPlayer(playerName, facebookId, facebookUrl, token);
 
 	if (playerId === previousPlayerId) return Promise.resolve();
 
@@ -540,16 +547,17 @@ app.use((req, res, next) => {
 app.get('*.(gif|png|jpe?g|svg|ico|app|ipa|plist)', express.static('public/img'));
 
 app.get('/games', async (req, res) => {
-	const { facebookId } = req.query;
+	const { facebookId, token } = req.query;
 
-	if (!facebookId) {
+	if (!facebookId && !token) {
 		return Promise.resolve(res.send([]));
 	}
 
-	const playerId = await db.getPlayerIdForFacebookId(facebookId);
+	const playerId = await db.getPlayerIdForFacebookId(facebookId) || await db.getPlayerIdForToken(token);
 
 	if (!playerId) {
-		console.log(`Found no playerId for facebookId ${facebookId}`);
+		if (facebookId) console.log(`Found no playerId for facebookId ${facebookId}`);
+		if (token) console.log(`Found no playerId for token ${token}`);
 		return Promise.resolve(res.send([]));
 	}
 

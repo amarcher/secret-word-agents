@@ -21,7 +21,7 @@ class RedisClient {
 		}, [`game:${gameId}:words`]);
 
 		return this.client.delAsync(`game:${gameId}:words`).then(() => (
-			this.client.hmsetAsync.apply(this.client, formattedWordMap) // eslint-disable-line prefer-spread
+			this.client.hmsetAsync(...formattedWordMap)
 		));
 	}
 
@@ -126,14 +126,23 @@ class RedisClient {
 		return this.client.getAsync(`facebook:${facebookId}`);
 	}
 
-	async setPlayer(name, facebookId, facebookUrl) {
-		const playerIdFromFB = facebookId && await this.getPlayerIdForFacebookId(facebookId);
-		const playerId = playerIdFromFB || await this.client.incrAsync('playerIds');
+	async getPlayerIdForToken(token) {
+		return this.client.getAsync(`token:${token}`);
+	}
 
-		this.client.hmsetAsync(`player:${playerId}`, 'name', name || '', 'facebookId', facebookId || '', 'facebookUrl', facebookUrl || '')
-			.then(() => {
-				if (facebookId && !playerIdFromFB) this.client.setAsync(`facebook:${facebookId}`, playerId);
-			});
+	async setPlayer(name, facebookId, facebookUrl, token) {
+		const playerIdFromFB = facebookId && await this.getPlayerIdForFacebookId(facebookId);
+		const playerIdFromToken = !facebookId && token && await this.getPlayerIdForToken(token);
+		const playerId = playerIdFromFB || playerIdFromToken || await this.client.incrAsync('playerIds');
+
+		const params = [`player:${playerId}`, 'name', name || ''];
+		if (facebookId) params.concat(['facebookId', facebookId, 'facebookUrl', facebookUrl || '']);
+		if (token) params.concat(['token', token]);
+
+		this.client.hmsetAsync(...params).then(() => {
+			if (facebookId && !playerIdFromFB) this.client.setAsync(`facebook:${facebookId}`, playerId);
+			if (token && !playerIdFromToken) this.client.setAsync(`token:${token}`, playerId);
+		});
 
 		return playerId;
 	}
