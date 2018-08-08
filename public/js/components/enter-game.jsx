@@ -196,6 +196,7 @@ export class BaseEnterGame extends Component {
 			gameExists,
 			showGameExists,
 		} = this.state;
+		const { facebookId } = this.props;
 
 		const gameInputClassNames = classNames('enter-game-input', {
 			'game-input-for-game-that-exists': showGameExists && gameExists,
@@ -223,12 +224,12 @@ export class BaseEnterGame extends Component {
 								/>
 								{this.renderGameExists()}
 							</div>
-							<input
+							{!facebookId && <input
 								className="enter-name-input"
 								placeholder="Your Name"
 								onChange={this.onChangeName}
 								value={name}
-							/>
+							/>}
 							<div>
 								<button className="enter-game-button" type="submit" disabled={!this.state.gameId}>
 									Enter
