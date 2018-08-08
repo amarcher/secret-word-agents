@@ -164,10 +164,8 @@ async function handleInitialRequest(ws, data) {
 			facebookImage,
 		} = payload;
 
-		const prevToken = ws.token;
-		if (token && !prevToken) ws.token = token;
 
-		const hasNewToken = token && token !== prevToken;
+		const hasNewToken = token && token !== ws.token;
 		const hasNewFacebookId = facebookId && facebookId !== ws.facebookId;
 		const hasNewPlayerName = playerName && playerName !== ws.playerName;
 
@@ -291,6 +289,7 @@ async function handlePlayerChanged(ws, playerName, facebookId, facebookUrl, toke
 		ws.playerName = playerName;
 		ws.facebookId = facebookId;
 		ws.facebookUrl = facebookUrl;
+		ws.token = token;
 
 		// Attempt to get the team for this player
 		const teamIdForPlayerId = await db.getTeamIdForPlayerId(ws.gameId, playerId);
