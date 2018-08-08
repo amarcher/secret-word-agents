@@ -567,10 +567,12 @@ app.get('/games', async (req, res) => {
 
 	console.log(`Found ${gameIds.length} games for facebookId ${facebookId}`);
 
-	const gameInfo = await gameIds.reduce(async (allGames, gameId) => {
-		allGames[gameId] = await getGameForPlayerId(gameId, playerId);
-		return allGames;
-	}, {});
+	const games = await Promise.all(gameIds.map(gameId => getGameForPlayerId(gameId, playerId)));
+
+	const gameInfo = gameIds.reduce((allGames, gameId, index) => ({
+		...allGames,
+		[gameId]: games[index],
+	}), {});
 
 	return Promise.resolve(res.send(gameInfo));
 });
