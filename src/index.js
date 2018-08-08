@@ -145,7 +145,7 @@ async function handleInitialRequest(ws, data) {
 						payload: {
 							count: sockets[gameId].size,
 							playerName: client.playerName,
-							teamId: client.teamId === 1 ? 'one' : 'two',
+							teamId: client.teamId && client.teamId === 1 ? 'one' : 'two',
 						},
 					});
 				}
@@ -355,7 +355,6 @@ async function handleTeamChanged(ws, teamId) {
 // NOTIFICATIONS (SENT SYNCRONOUSLY OVER WEB SOCKET & IOS PUSH NOTIFICATIONS SERVICE)
 
 function send(client, data) {
-	console.log('sending', data.type);
 	if (client.readyState === 1) {
 		client.send(JSON.stringify(Object.assign({ gameId: client.gameId }, data)));
 	}
