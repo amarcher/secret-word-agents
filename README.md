@@ -37,7 +37,8 @@ game:{$gameId}:turn --> Hash of current turn data for the game
 	clueNumber
 	guessesLeft
 
-facebook:{$facebookId} --> playerId for which this facebookId belongs
+facebook:{$facebookId} --> playerId to which this facebookId belongs
+token:{$token} --> playerId to which this token belongs
 
 playerIds --> integer of last used player id
 player:{$playerId} --> Hash of player info
