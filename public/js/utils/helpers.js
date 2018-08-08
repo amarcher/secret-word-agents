@@ -7,3 +7,20 @@ export function isIOSSafari() {
 
 	return iOS && webkit && !ua.match(/CriOS/i);
 }
+
+export function debounce(func, wait) {
+	let timeout = null;
+	let resolves = [];
+
+	return (...args) => {
+		clearTimeout(timeout);
+		timeout = setTimeout(() => {
+			// Get the result of func, then call every pending resolve function with it
+			const result = func(...args);
+			resolves.forEach(r => r(result));
+			resolves = [];
+		}, wait);
+
+		return new Promise(resolve => resolves.push(resolve));
+	};
+}

@@ -456,6 +456,10 @@ async function endTurn(gameId) {
 async function getGameForPlayerId(gameId, playerId) {
 	const teamId = await db.getTeamIdForPlayerId(gameId, playerId);
 	const words = await db.getWords(gameId, teamId);
+	const clue = await db.getTurn(gameId);
+
+	const playerGivingClue = clue && (clue.clueGiverTeamId === 1 ? 'playerOne' : 'playerTwo');
+
 	let team;
 	if (teamId) {
 		team = teamId === 1 ? 'playerOne' : 'playerTwo';
@@ -465,6 +469,9 @@ async function getGameForPlayerId(gameId, playerId) {
 		words,
 		teamId: team,
 		turnsLeft: await db.getTurnsLeft(gameId),
+		number: clue && clue.guessesLeft,
+		word: clue && clue.clueWord,
+		playerGivingClue,
 	};
 }
 
@@ -575,6 +582,14 @@ app.get('/games', async (req, res) => {
 	}), {});
 
 	return Promise.resolve(res.send(gameInfo));
+});
+
+app.get('/exists', async (req, res) => {
+	const { gameId } = req.query;
+
+	const exists = await db.doesGameExist(gameId);
+	const activePlayers = (sockets[gameId] && sockets[gameId].size) || 0;
+	return Promise.resolve(res.send({ exists, activePlayers }));
 });
 
 app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU', (req, res) => {

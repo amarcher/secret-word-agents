@@ -3,14 +3,20 @@ import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
 import { history } from '../stores';
-import { getGameById } from '../stores/game-store';
+import { getClueForGameId, getTurnsLeftForGameId } from '../stores/turns-store';
 
 const propTypes = {
-	gameId: PropTypes.string,
+	gameId: PropTypes.string.isRequired,
+	clue: PropTypes.shape({
+		word: PropTypes.string,
+		number: PropTypes.number,
+	}),
+	turnsLeft: PropTypes.number,
 };
 
 const defaultProps = {
-	gameId: '',
+	clue: {},
+	turnsLeft: 0,
 };
 
 export class BaseGameSummary extends Component {
@@ -26,8 +32,20 @@ export class BaseGameSummary extends Component {
 		history.push(`/${gameId}`);
 	}
 
+	renderClue() {
+		const { clue } = this.props;
+
+		if (!clue || !clue.word) return null;
+
+		return (
+			<span className="small"> {clue.word} - {clue.number}</span>
+		);
+	}
+
 	render() {
-		const { gameId } = this.props;
+		const { gameId, turnsLeft } = this.props;
+
+		const turnsLeftText = `${turnsLeft} TURN${turnsLeft !== 1 ? 'S' : ''} LEFT`;
 
 		return (
 			<button
@@ -35,7 +53,11 @@ export class BaseGameSummary extends Component {
 				type="button"
 				onClick={this.onPress}
 			>
-				{gameId}
+				<div>{gameId}</div>
+				<div className="game-summary-details">
+					<span className="small">{turnsLeftText}</span>
+					{this.renderClue()}
+				</div>
 			</button>
 		);
 	}
@@ -44,11 +66,15 @@ export class BaseGameSummary extends Component {
 BaseGameSummary.propTypes = propTypes;
 BaseGameSummary.defaultProps = defaultProps;
 
-const mapStateToProps = (state, { gameId } = {}) => {
-	const game = getGameById(state, gameId);
+const mapStateToProps = (state, ownProps) => {
+	const { gameId } = ownProps;
+
+	const turnsLeft = getTurnsLeftForGameId(state, gameId);
+	const clue = getClueForGameId(state, gameId);
 
 	return {
-		...game,
+		clue,
+		turnsLeft,
 	};
 };
 

@@ -2,11 +2,13 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import FacebookLogin from 'react-facebook-login';
 import { connect } from 'react-redux';
+import classNames from 'classnames';
 
-import { isIOSSafari } from '../utils/helpers';
+import { debounce, isIOSSafari } from '../utils/helpers';
 import { setPlayerName, setFacebookId, getFacebookId, getFacebookImage, getPlayerName } from '../stores/player-name-store';
 import { getGames, getGamesViaApi } from '../stores/game-store';
 import { history } from '../stores';
+import { checkIfGameExists } from '../fetchers';
 import GameSummary from './game-summary';
 
 const propTypes = {
@@ -29,6 +31,8 @@ const defaultProps = {
 const IS_IOS_SAFARI = isIOSSafari();
 const IOS_DOWNLOAD_LINK = 'itms-services://?action=download-manifest&url=https://www.dooler.com/manifest.plist';
 
+const checkIfExistsDebounced = debounce(checkIfGameExists, 500);
+
 export class BaseEnterGame extends Component {
 	constructor(props) {
 		super(props);
@@ -36,6 +40,9 @@ export class BaseEnterGame extends Component {
 		this.state = {
 			gameId: '',
 			name: props.playerName,
+			gameExists: false,
+			showGameExists: false,
+			activePlayers: 0,
 		};
 
 		this.onSubmit = this.onSubmit.bind(this);
@@ -55,11 +62,15 @@ export class BaseEnterGame extends Component {
 
 	onChangeGameId(e) {
 		const gameId = e.target.value;
-		this.setState(() => ({ gameId: gameId && gameId.replace(/\s/g, '').toUpperCase() }));
+		this.setState(() => ({
+			gameId: gameId && gameId.replace(/\s/g, '').toUpperCase(),
+			showGameExists: false,
+		}), () => this.checkIfExists());
 	}
 
 	onChangeName(e) {
 		const name = e.target.value;
+
 		this.setState(() => ({ name: name && name.replace(/\s/g, '').toUpperCase() }));
 	}
 
@@ -71,6 +82,20 @@ export class BaseEnterGame extends Component {
 
 		if (name) this.props.setPlayerName({ playerName: name });
 		history.push(`/${gameId}`);
+	}
+
+	checkIfExists() {
+		const { gameId } = this.state;
+
+		if (!gameId) return;
+
+		checkIfExistsDebounced({ gameId }).then(({ exists: gameExists, activePlayers } = {}) => {
+			this.setState(() => ({
+				showGameExists: true,
+				gameExists,
+				activePlayers,
+			}));
+		});
 	}
 
 	renderDownloadOnIOSLink() {
@@ -140,14 +165,44 @@ export class BaseEnterGame extends Component {
 
 		return (
 			<div className="game-summary-section">
-				<span>Rejoin an existing game:</span>
+				<div className="small-margin-bottom">Rejoin an existing game:</div>
 				{gameSummaries}
 			</div>
 		);
 	}
 
+	renderGameExists() {
+		const { showGameExists, gameExists, activePlayers } = this.state;
+
+		if (!showGameExists) return null;
+
+		const className = classNames({
+			'game-exists': showGameExists && gameExists,
+			'game-doesnt-exist': showGameExists && !gameExists,
+		});
+
+		const activePlayersText = `Join ${activePlayers} other players${activePlayers !== 1 ? 's' : ''}`;
+
+		return (
+			<div className={className}>
+				{gameExists && activePlayersText}
+				{!gameExists && 'Available!'}
+			</div>
+		);
+	}
+
 	render() {
-		const { gameId, name } = this.state;
+		const {
+			gameId,
+			name,
+			gameExists,
+			showGameExists,
+		} = this.state;
+
+		const gameInputClassNames = classNames('enter-game-input', {
+			'game-input-for-game-that-exists': showGameExists && gameExists,
+			'game-input-for-game-that-doesnt-exist': showGameExists && !gameExists,
+		});
 
 		return (
 			<div className="enter-game-container">
@@ -160,12 +215,16 @@ export class BaseEnterGame extends Component {
 					<div className="enter-game">
 						<h1 className="title">Dooler</h1>
 						<form onSubmit={this.onSubmit}>
-							<input
-								className="enter-game-input"
-								placeholder="Game Code"
-								onChange={this.onChangeGameId}
-								value={gameId}
-							/>
+							<div className="align-left">Enter a new game:</div>
+							<div className="enter-game-input-wrapper">
+								<input
+									className={gameInputClassNames}
+									placeholder="Game Code"
+									onChange={this.onChangeGameId}
+									value={gameId}
+								/>
+								{this.renderGameExists()}
+							</div>
 							<input
 								className="enter-name-input"
 								placeholder="Your Name"

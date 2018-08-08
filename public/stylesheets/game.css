@@ -163,8 +163,17 @@
 .enter-game-input,
 .enter-name-input {
 	display: block;
-	margin: 12px;
+	margin: 12px 0;
 	text-align: center;
+	transition: box-shadow 200;
+}
+
+.enter-game-input {
+	margin-top: 6px;
+}
+
+.enter-game-input-wrapper {
+	position: relative;
 }
 
 .word-input,
@@ -310,8 +319,71 @@
 .game-summary {
 	display: block;
 	margin-top: 2px;
+	text-align: left;
+	border-radius: 1px;
+	width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.game-summary:hover {
+	background-color: #898989;
 }
 
 .game-summary-section {
+	text-align: left;
+	overflow-y: scroll;
+	margin-top: 24px;
+}
+
+.game-summary-details {
+	margin-top: 0;
+	margin-bottom: 6px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	display: flex;
+	justify-content: space-between;
+}
+
+.game-exists,
+.game-doesnt-exist {
+	position: absolute;
+	left: 100%;
+	margin-left: 12px;
+	top: -2px;
+	display: inline;
+	overflow: visible;
+	white-space: nowrap;
+	padding: 12px 0;
+}
+
+.game-input-for-game-that-exists {
+	box-shadow: 0 0 0 2px blue;
+}
+
+.game-input-for-game-that-doesnt-exist {
+	box-shadow: 0 0 0 2px green;
+}
+
+.game-doesnt-exist {
+	color: green;
+}
+
+.game-exists {
+	color: blue;
+}
+
+.small {
+	font-size: 10px;
+	line-height: 10px;
+}
+
+.small-margin-bottom {
+	margin-bottom: 6px;
+}
+
+.align-left {
 	text-align: left;
 }

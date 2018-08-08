@@ -1,6 +1,6 @@
 import { createAction, createReducer } from 'redux-act';
 import { fetchGame, guess, startNewGame, fetchGames } from '../fetchers';
-import { updateTurnsLeft } from './turns-store';
+import { updateTurnsLeft, updateClue } from './turns-store';
 import { clearPlayers } from './players-store';
 import { getTeamId, setTeamId } from './team-id-store';
 import { getFacebookId } from './player-name-store';
@@ -112,10 +112,12 @@ export function getGamesViaApi() {
 		}).then((games) => {
 			if (games) {
 				dispatch(updateGames(games));
-				Object.values(games).forEach((game) => {
-					dispatch(setTeamId(game));
-					dispatch(updateTurnsLeft(game));
-					dispatch(clearPlayers(game));
+				Object.keys(games).forEach((gameId) => {
+					const game = games[gameId];
+					dispatch(setTeamId({ gameId, ...game }));
+					dispatch(updateTurnsLeft({ gameId, ...game }));
+					dispatch(updateClue({ gameId, ...game }));
+					dispatch(clearPlayers({ gameId, ...game }));
 				});
 			}
 		});
