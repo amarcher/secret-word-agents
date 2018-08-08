@@ -167,13 +167,16 @@ async function handleInitialRequest(ws, data) {
 		const prevToken = ws.token;
 		if (token && !prevToken) ws.token = token;
 
-		const isImplicitPlayerChange = type !== 'playerChange' && (
-			(playerName && playerName !== ws.playerName)
-			|| (facebookId && facebookId !== ws.facebookId)
-			|| (token && token !== prevToken)
-		);
+		const hasNewToken = token && token !== prevToken;
+		const hasNewFacebookId = facebookId && facebookId !== ws.facebookId;
+		const hasNewPlayerName = playerName && playerName !== ws.playerName;
 
-		if (isImplicitPlayerChange) return handlePlayerChanged(ws, playerName, facebookId, facebookImage, token);
+		const isImplicitPlayerChange = type !== 'playerChange' && (hasNewToken || hasNewFacebookId || hasNewPlayerName);
+
+		if (isImplicitPlayerChange) {
+			console.log(`Handling an implicit player change for type="${type}" with new${hasNewToken ? ' token' : ''}${hasNewPlayerName ? ' playerName' : ''}${hasNewFacebookId ? ' facebookId' : ''}`);
+			return handlePlayerChanged(ws, playerName, facebookId, facebookImage, token);
+		}
 
 		return Promise.resolve();
 	});
