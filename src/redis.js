@@ -313,6 +313,10 @@ class RedisClient {
 		return game;
 	}
 
+	async doesGameExist(gameId) {
+		return this.client.existsAsync(`game:${gameId}`).then(exists => !!exists);
+	}
+
 	async quit() {
 		return this.client.quitAsync();
 	}

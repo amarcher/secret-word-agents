@@ -22,7 +22,7 @@ export class BaseTurnView extends Component {
 	renderTurns() {
 		const turnsLeft = Math.max(this.props.turnsLeft, 0);
 
-		if (turnsLeft < 1) {
+		if (turnsLeft < 1 && this.props.agentsLeft > 0) {
 			return (
 				<div className="game-over">Game Over</div>
 			);

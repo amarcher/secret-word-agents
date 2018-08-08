@@ -87,3 +87,7 @@ export function startNewGame({
 export function fetchGames({ facebookId } = {}) {
 	return get('/games', { facebookId });
 }
+
+export function checkIfGameExists({ gameId } = {}) {
+	return get('/exists', { gameId });
+}
