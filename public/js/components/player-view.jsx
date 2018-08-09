@@ -1,28 +1,61 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
-import { getActiveGameId } from '../stores/game-store';
+import { getActiveGameId, getAgentsLeftForGameIdAndTeamId } from '../stores/game-store';
 import { getConnectedPlayerNamesForGameId } from '../stores/players-store';
 
 const propTypes = {
-	players: PropTypes.arrayOf(PropTypes.string).isRequired,
+	teamOne: PropTypes.arrayOf(PropTypes.shape({
+		playerName: PropTypes.string,
+		playerId: PropTypes.string,
+		facebookImage: PropTypes.string,
+	})).isRequired,
+	teamTwo: PropTypes.arrayOf(PropTypes.shape({
+		playerName: PropTypes.string,
+		playerId: PropTypes.string,
+		facebookImage: PropTypes.string,
+	})).isRequired,
+	agentsLeftTeamOne: PropTypes.number.isRequired,
+	agentsLeftTeamTwo: PropTypes.number.isRequired,
 };
 
 export class BasePlayerView extends Component {
-	renderPlayers() {
-		return this.props.players.map((player, index) => (
-			// eslint-disable-next-line react/no-array-index-key
-			<div className="player" key={index}>
-				<span className="player-name">{player}</span>
-			</div>
-		));
+	renderPlayers(players, agentsLeft) {
+		const playersContent = players.map(({ playerId, playerName, facebookImage } = {}) => {
+			const style = {};
+			if (facebookImage) style.background = `url('${facebookImage}')`;
+
+			return (
+				<div className="player" key={playerId} style={style}>
+					<span className="player-name">{playerName}</span>
+				</div>
+			);
+		});
+
+		return (
+			<Fragment>
+				<legend align="center">{`${agentsLeft} left`}</legend>
+				<div className="team-container">
+					{playersContent}
+				</div>
+			</Fragment>
+		);
 	}
 
 	render() {
+		const {
+			teamOne, teamTwo, agentsLeftTeamOne, agentsLeftTeamTwo,
+		} = this.props;
+
 		return (
 			<div className="players">
-				{this.renderPlayers()}
+				<fieldset className="team">
+					{this.renderPlayers(teamOne, agentsLeftTeamOne)}
+				</fieldset>
+				<fieldset className="team">
+					{this.renderPlayers(teamTwo, agentsLeftTeamTwo)}
+				</fieldset>
 			</div>
 		);
 	}
@@ -32,9 +65,13 @@ BasePlayerView.propTypes = propTypes;
 
 function mapStateToProps(state) {
 	const gameId = getActiveGameId(state);
+	const { teamOne, teamTwo } = getConnectedPlayerNamesForGameId(state, gameId);
 
 	return {
-		players: getConnectedPlayerNamesForGameId(state, gameId),
+		teamOne,
+		teamTwo,
+		agentsLeftTeamOne: getAgentsLeftForGameIdAndTeamId(state, gameId, 1),
+		agentsLeftTeamTwo: getAgentsLeftForGameIdAndTeamId(state, gameId, 2),
 	};
 }
 

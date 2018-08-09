@@ -40,6 +40,11 @@
 	background: linear-gradient(to right, #1e1e1e, #721932);
 }
 
+.team-two .word.non-agent-player-one,
+.team-one .word.non-agent-player-two {
+	cursor: auto;
+}
+
 .word.non-agent-player-one.non-agent-player-two {
 	background: #721932;
 	cursor: auto;
@@ -88,8 +93,26 @@
 .players {
 	align-items: center;
 	display: flex;
-	flex: 0 1 350px;
+	flex: 1 1 auto;
 	justify-content: flex-end;
+}
+
+.team {
+	border: 1px solid #a09191;
+	border-radius: 2px;
+	min-width: 48px;
+	min-height: 64px;
+	margin: 0 6px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.team-container {
+	flex: 1 1 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .player {
@@ -97,7 +120,7 @@
 	background-size: contain;
 	height: 24px;
 	width: 24px;
-	margin-left: 6px;
+	margin: 6px;
 	position: relative;
 	display: flex;
 	justify-content: center;
@@ -107,6 +130,10 @@
 	font-size: 7px;
 	position: absolute;
 	bottom: -10px;
+	max-width: 32px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .player-info,
