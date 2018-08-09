@@ -111,7 +111,9 @@ class RedisClient {
 	}
 
 	async getPlayersOnTeam(gameId, teamId) {
-		return (this.client.smembersAsync(`game:${gameId}:team:${teamId}`) || []).map(playerId => parseInt(playerId, 10));
+		return this.client.smembersAsync(`game:${gameId}:team:${teamId}`).then((playerIds = []) => (
+			playerIds.map(playerId => parseInt(playerId, 10))
+		));
 	}
 
 	async getTokensOnTeam(gameId, teamId) {
@@ -123,11 +125,11 @@ class RedisClient {
 	}
 
 	async getPlayerIdForFacebookId(facebookId) {
-		return parseInt(this.client.getAsync(`facebook:${facebookId}`), 10);
+		return this.client.getAsync(`facebook:${facebookId}`).then(playerId => parseInt(playerId, 10));
 	}
 
 	async getPlayerIdForToken(token) {
-		return parseInt(this.client.getAsync(`token:${token}`), 10);
+		return this.client.getAsync(`token:${token}`).then(playerId => parseInt(playerId, 10));
 	}
 
 	async setPlayer(name, facebookId, facebookUrl, token) {
