@@ -148,6 +148,7 @@ async function handleInitialRequest(ws, data) {
 						payload: {
 							count: sockets[gameId].size,
 							playerName: client.playerName,
+							playerId: client.playerId,
 							facebookImage: client.facebookImage,
 							teamId: client.teamId,
 						},

@@ -70,7 +70,13 @@ export const getTurnsLeftForGameId = (state, gameId) => {
 	return (typeof turnsLeft === 'number') ? turnsLeft : INITIAL_STATE.turnsLeft;
 };
 export const getClueForGameId = (state, gameId) => state && state.turns && state.turns[gameId] && state.turns[gameId].clue;
+export const getPlayerGivingClueForGameId = (state, gameId) => state && state.turns && state.turns[gameId] && state.turns[gameId].playerGivingClue;
 export const getGuessesLeftForGameId = (state, gameId) => state && state.turns && state.turns[gameId] && state.turns[gameId].guessesLeft;
+export const isActiveGuesserForGameId = (state, gameId) => {
+	const playerGivingClue = getPlayerGivingClueForGameId(state, gameId);
+	const teamId = getTeamId(state, gameId);
+	return playerGivingClue && teamId && playerGivingClue.toLowerCase().indexOf(teamId) === -1;
+};
 
 // Thunks
 export function giveClue({ word, number }) {
