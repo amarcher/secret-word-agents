@@ -16,7 +16,6 @@ import { enableNotifications } from '../utils/notifications';
 
 const propTypes = {
 	enterGame: PropTypes.func.isRequired,
-	playerName: PropTypes.string,
 	gameId: PropTypes.string.isRequired,
 	game: PropTypes.shape({
 		gameId: PropTypes.string,
@@ -27,15 +26,14 @@ const propTypes = {
 
 const defaultProps = {
 	game: {},
-	playerName: '',
 	teamId: undefined,
 };
 
 export class BaseContainer extends Component {
 	componentDidMount() {
-		const { gameId, playerName } = this.props;
+		const { gameId } = this.props;
 
-		this.props.enterGame({ gameId, playerName });
+		this.props.enterGame({ gameId });
 
 		enableNotifications();
 		document.title = gameId;

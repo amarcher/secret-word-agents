@@ -1,11 +1,8 @@
-import { createAction, createReducer } from 'redux-act';
+import { createReducer } from 'redux-act';
 import { changeTeam } from '../fetchers';
+import { setTeamId } from './actions';
 import { getActiveGameId } from './game-store';
 import { getPlayerName, getFacebookId, getFacebookImage } from './player-name-store';
-
-export const setTeamId = createAction('Set team id');
-export const setPlayerName = createAction('Set player name');
-export const setFacebookId = createAction('Set Facebook id');
 
 const reducer = createReducer({
 	[setTeamId]: (state, { gameId, teamId }) => {

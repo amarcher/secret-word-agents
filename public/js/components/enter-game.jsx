@@ -3,9 +3,10 @@ import PropTypes from 'prop-types';
 import FacebookLogin from 'react-facebook-login';
 import { connect } from 'react-redux';
 import classNames from 'classnames';
+import { setPlayerName, setFacebookId } from '../stores/actions';
 
 import { debounce, isIOSSafari } from '../utils/helpers';
-import { setPlayerName, setFacebookId, getFacebookId, getFacebookImage, getPlayerName } from '../stores/player-name-store';
+import { getFacebookId, getFacebookImage, getPlayerName } from '../stores/player-name-store';
 import { getGames, getGamesViaApi } from '../stores/game-store';
 import { history } from '../stores';
 import { checkIfGameExists } from '../fetchers';

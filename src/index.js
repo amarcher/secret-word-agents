@@ -297,6 +297,17 @@ async function handlePlayerChanged(ws, playerName, facebookId, facebookUrl, toke
 		ws.facebookImage = facebookUrl;
 		ws.token = token;
 
+		send(ws, ws.gameId, {
+			type: 'playerChanged',
+			payload: {
+				playerName,
+				playerId,
+				facebookId,
+				facebookImage: facebookUrl,
+				token,
+			},
+		});
+
 		// Attempt to get the team for this player
 		const teamIdForPlayerId = await db.getTeamIdForPlayerId(ws.gameId, playerId);
 
@@ -353,6 +364,8 @@ async function handleTeamChanged(ws, teamId) {
 		if (nextTeamId !== ws.teamId) {
 			ws.teamId = nextTeamId;
 
+			const { agentsLeftTeamOne, agentsLeftTeamTwo } = await db.getAgentsLeft(ws.gameId);
+
 			broadcast(ws.gameId, {
 				type: 'playerJoined',
 				payload: {
@@ -376,6 +389,8 @@ async function handleTeamChanged(ws, teamId) {
 				payload: {
 					gameId: ws.gameId,
 					words: await db.getWords(ws.gameId, ws.teamId),
+					agentsLeftTeamOne,
+					agentsLeftTeamTwo,
 				},
 			});
 		}
@@ -478,6 +493,7 @@ async function getGameForPlayerId(gameId, playerId) {
 	const teamId = await db.getTeamIdForPlayerId(gameId, playerId);
 	const words = await db.getWords(gameId, teamId);
 	const clue = await db.getTurn(gameId);
+	const { agentsLeftTeamOne, agentsLeftTeamTwo } = await db.getAgentsLeft(gameId);
 
 	const playerGivingClue = clue && (clue.clueGiverTeamId === 1 ? 'playerOne' : 'playerTwo');
 
@@ -493,6 +509,8 @@ async function getGameForPlayerId(gameId, playerId) {
 		number: clue && clue.guessesLeft,
 		word: clue && clue.clueWord,
 		playerGivingClue,
+		agentsLeftTeamOne,
+		agentsLeftTeamTwo,
 	};
 }
 
@@ -503,9 +521,11 @@ async function makeGuess(ws, word) {
 
 	if (!guess) return;
 
+	const { agentsLeftTeamOne, agentsLeftTeamTwo } = await db.getAgentsLeft(ws.gameId);
+
 	broadcast(ws.gameId, {
 		type: 'guess',
-		payload: Object.assign({}, guess, { gameId: ws.gameId }),
+		payload: Object.assign({}, guess, { agentsLeftTeamOne, agentsLeftTeamTwo, gameId: ws.gameId }),
 	});
 
 	const clueText = clueWord ? ` for the clue "${clueWord}"` : '';
@@ -546,11 +566,15 @@ async function maybeSendCurrentClue(ws) {
 }
 
 async function sendWholeGameState(ws) {
+	const { agentsLeftTeamOne, agentsLeftTeamTwo } = await db.getAgentsLeft(ws.gameId);
+
 	send(ws, {
 		type: 'words',
 		payload: {
 			gameId: ws.gameId,
 			words: await db.getWords(ws.gameId, ws.teamId),
+			agentsLeftTeamOne,
+			agentsLeftTeamTwo,
 		},
 	});
 	send(ws, {

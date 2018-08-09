@@ -3,9 +3,10 @@ import PropTypes from 'prop-types';
 import FacebookLogin from 'react-facebook-login';
 import { connect } from 'react-redux';
 
+import { setPlayerName, setFacebookId } from '../stores/actions';
 import { getActiveGameId } from '../stores/game-store';
 import { changeTeamId, getTeamId } from '../stores/team-id-store';
-import { getPlayerName, setPlayerName, getFacebookId, getFacebookImage, setFacebookId, changePlayerDetails } from '../stores/player-name-store';
+import { getPlayerName, getFacebookId, getFacebookImage, changePlayerDetails } from '../stores/player-name-store';
 
 const propTypes = {
 	changeTeamId: PropTypes.func.isRequired,

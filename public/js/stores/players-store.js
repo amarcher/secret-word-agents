@@ -1,8 +1,5 @@
-import { createAction, createReducer } from 'redux-act';
-
-export const incrementPlayerCount = createAction('Increment count of players connected to the game');
-export const decrementPlayerCount = createAction('Decrement count of players connected to the game');
-export const clearPlayers = createAction('Remove all players from the game');
+import { createReducer } from 'redux-act';
+import { incrementPlayerCount, decrementPlayerCount, clearPlayers } from './actions';
 
 const initialPlayersState = { count: 0, teamOne: [], teamTwo: [] };
 
@@ -10,7 +7,7 @@ const reducer = createReducer({
 	[incrementPlayerCount]: (state, {
 		gameId, count, playerId, playerName, teamId, facebookImage,
 	}) => {
-		if (!gameId) return state;
+		if (!gameId || typeof playerId !== 'number') return state;
 
 		const prevPlayerCount = state[gameId] || initialPlayersState;
 		const teamProperty = `team${parseInt(teamId, 10) === 1 ? 'One' : 'Two'}`;
