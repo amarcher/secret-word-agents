@@ -10,6 +10,7 @@ import TurnView from './turn-view';
 import PlayerSelect from './player-select';
 import EndTurn from './end-turn';
 import { enterGame, getGameById, getActiveGameId } from '../stores/game-store';
+import { getTeamId } from '../stores/team-id-store';
 import { getPlayerName } from '../stores/player-name-store';
 import { enableNotifications } from '../utils/notifications';
 
@@ -21,11 +22,13 @@ const propTypes = {
 		gameId: PropTypes.string,
 		words: PropTypes.object,
 	}),
+	teamId: PropTypes.number,
 };
 
 const defaultProps = {
 	game: {},
 	playerName: '',
+	teamId: undefined,
 };
 
 export class BaseContainer extends Component {
@@ -39,7 +42,7 @@ export class BaseContainer extends Component {
 	}
 
 	render() {
-		const { game } = this.props;
+		const { game, teamId } = this.props;
 
 		if (!game.words) {
 			return null;
@@ -52,7 +55,7 @@ export class BaseContainer extends Component {
 					<ClueView />
 					<PlayerSelect />
 				</div>
-				<GameView game={game} />
+				<GameView game={game} teamId={teamId} />
 				<div className="player-info">
 					<TurnView />
 					<EndTurn />
@@ -72,6 +75,7 @@ function mapStateToProps(state) {
 	return {
 		game: getGameById(state, gameId),
 		gameId,
+		teamId: getTeamId(state, gameId),
 		playerName: getPlayerName(state),
 	};
 }

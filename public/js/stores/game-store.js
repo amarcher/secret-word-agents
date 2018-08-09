@@ -4,7 +4,7 @@ import { updateTurnsLeft, updateClue } from './turns-store';
 import { clearPlayers } from './players-store';
 import { getTeamId, setTeamId } from './team-id-store';
 import { getFacebookId } from './player-name-store';
-import { TOTAL_AGENTS } from '../rules/game';
+import { AGENTS_PER_PLAYER, TOTAL_AGENTS } from '../rules/game';
 import { isAgent } from '../rules/words';
 
 export const updateGames = createAction('Update games');
@@ -71,6 +71,14 @@ export const getActiveGameId = state => state && state.router && state.router.lo
 	&& state.router.location.pathname.replace('/', '');
 export const getAgentsLeftForGameId = (state, gameId) => gameId && state && state.game && state.game[gameId] && state.game[gameId].words &&
 	Object.values(state.game[gameId].words).reduce((count, word) => (isAgent(word) ? count - 1 : count), TOTAL_AGENTS);
+export const getAgentsLeftForGameIdAndTeamId = (state, gameId, teamId) => {
+	if (!(gameId && state && state.game && state.game[gameId] && state.game[gameId].words)) return AGENTS_PER_PLAYER;
+	const team = teamId === 1 ? 'playerOne' : 'playerTwo';
+	const otherTeam = teamId === 2 ? 'playerOne' : 'playerTwo';
+	return Object.values(state.game[gameId].words).reduce((count, word) => (
+		word.roleRevealedForClueGiver[team] === 'AGENT'
+		|| (word.roleRevealedForClueGiver[otherTeam] === 'AGENT' && word.role === 'AGENT') ? count - 1 : count), AGENTS_PER_PLAYER);
+};
 
 // Thunks
 export function enterGame({ gameId, playerName }) {

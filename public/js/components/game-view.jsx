@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 
 import Word from './word';
 
@@ -8,6 +9,11 @@ const propTypes = {
 		gameId: PropTypes.string,
 		words: PropTypes.object,
 	}).isRequired,
+	teamId: PropTypes.number,
+};
+
+const defaultProps = {
+	teamId: undefined,
 };
 
 export default class GameView extends Component {
@@ -26,12 +32,18 @@ export default class GameView extends Component {
 	}
 
 	render() {
-		if (!this.props.game.words) {
+		const { game, teamId } = this.props;
+
+		if (!game || !game.words) {
 			return null;
 		}
 
+		const className = classNames('words', {
+			[`team-${teamId}`]: !!teamId,
+		});
+
 		return (
-			<div className="words">
+			<div className={className}>
 				{this.renderWords()}
 			</div>
 		);
@@ -39,3 +51,4 @@ export default class GameView extends Component {
 }
 
 GameView.propTypes = propTypes;
+GameView.defaultProps = defaultProps;

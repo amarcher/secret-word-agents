@@ -91,7 +91,7 @@ export class BaseEnterGame extends Component {
 			this.setState(prevState => ({
 				showGameExists: prevState.gameId && true,
 				gameExists,
-				activePlayers,
+				activePlayers: parseInt(activePlayers, 10),
 			}));
 		});
 	}

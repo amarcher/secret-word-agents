@@ -26,7 +26,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
  * ws.gameId		-- the gameId the socket is subscribed to
  * ws.playerId		-- the playerId from our Redis store of the connected player
  * ws.teamId		-- the teamId (either: 1 or 2 if defined)
+ * ws.token			-- the iOS notification token for the player
  * ws.facebookId	-- the facebookId for the player
+ * ws.facebookImage	-- the facebookImage for the player
  * ws.playerName	-- the name of the player
 */
 
@@ -48,7 +50,6 @@ server.listen(port, () => {
  * Many browsers self-close web sockets, but pinging them every thirty seconds keeps them open.
  * If the client disappears without closing our connection, we'll be able to close it if we don't get a pong back.
  */
-
 
 const noop = () => {};
 const THIRTY_SECONDS = 30 * 1000;
@@ -100,6 +101,8 @@ wss.on('connection', (ws) => {
 			ws.token = undefined;
 			ws.playerId = undefined;
 			ws.teamId = undefined;
+			ws.facebookId = undefined;
+			ws.facebookImage = undefined;
 		}
 	});
 
@@ -145,7 +148,8 @@ async function handleInitialRequest(ws, data) {
 						payload: {
 							count: sockets[gameId].size,
 							playerName: client.playerName,
-							teamId: client.teamId && (client.teamId === 1 ? 'one' : 'two'),
+							facebookImage: client.facebookImage,
+							teamId: client.teamId,
 						},
 					});
 				}
@@ -169,7 +173,7 @@ async function handleInitialRequest(ws, data) {
 		const hasNewFacebookId = facebookId && facebookId !== ws.facebookId;
 		const hasNewPlayerName = playerName && playerName !== ws.playerName;
 
-		const isImplicitPlayerChange = type !== 'playerChange' && (hasNewToken || hasNewFacebookId || hasNewPlayerName);
+		const isImplicitPlayerChange = type !== 'changePlayer' && (hasNewToken || hasNewFacebookId || hasNewPlayerName);
 
 		if (isImplicitPlayerChange) {
 			console.log(`Handling an implicit player change for type="${type}" with new${hasNewToken ? ' token' : ''}${hasNewPlayerName ? ' playerName' : ''}${hasNewFacebookId ? ' facebookId' : ''}`);
@@ -257,6 +261,7 @@ async function handlePlayerLeft(ws) {
 				count: sockets[ws.gameId].size,
 				playerName: ws.playerName,
 				playerId: ws.playerId,
+				teamId: ws.teamId,
 			},
 		});
 	}
@@ -288,7 +293,7 @@ async function handlePlayerChanged(ws, playerName, facebookId, facebookUrl, toke
 		ws.playerId = playerId;
 		ws.playerName = playerName;
 		ws.facebookId = facebookId;
-		ws.facebookUrl = facebookUrl;
+		ws.facebookImage = facebookUrl;
 		ws.token = token;
 
 		// Attempt to get the team for this player
@@ -306,7 +311,9 @@ async function handlePlayerChanged(ws, playerName, facebookId, facebookUrl, toke
 			payload: {
 				count: sockets[ws.gameId].size,
 				playerName: ws.playerName,
-				teamId: teamIdForPlayerId === 1 ? 'one' : 'two',
+				playerId: ws.playerId,
+				facebookImage: ws.facebookImage,
+				teamId: ws.teamId,
 			},
 		});
 
@@ -325,6 +332,17 @@ async function handleTeamChanged(ws, teamId) {
 	const promise = Promise.resolve();
 
 	if (ws.teamId && ws.teamId !== desiredTeamId) {
+		broadcast(ws.gameId, {
+			type: 'playerLeft',
+			payload: {
+				count: sockets[ws.gameId].size - 1,
+				playerName: ws.playerName,
+				playerId: ws.playerId,
+				facebookImage: ws.facebookImage,
+				teamId: ws.teamId,
+			},
+		});
+
 		promise.then(() => db.removePlayerFromTeam(ws.gameId, ws.playerId, ws.teamId, ws.token));
 	}
 
@@ -339,7 +357,9 @@ async function handleTeamChanged(ws, teamId) {
 				payload: {
 					count: sockets[ws.gameId].size,
 					playerName: ws.playerName,
-					teamId: ws.teamId === 1 ? 'one' : 'two',
+					playerId: ws.playerId,
+					facebookImage: ws.facebookImage,
+					teamId: ws.teamId,
 				},
 			});
 
