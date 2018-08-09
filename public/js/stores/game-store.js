@@ -1,15 +1,8 @@
-import { createAction, createReducer } from 'redux-act';
+import { createReducer } from 'redux-act';
+import { updateAgentsLeft, clearPlayers, updateGames, addOrReplaceGame, updateWordInGame, updateTurnsLeft, updateClue, setTeamId } from './actions';
 import { fetchGame, guess, startNewGame, fetchGames } from '../fetchers';
-import { updateTurnsLeft, updateClue } from './turns-store';
-import { clearPlayers } from './players-store';
-import { getTeamId, setTeamId } from './team-id-store';
-import { getFacebookId } from './player-name-store';
 import { AGENTS_PER_PLAYER, TOTAL_AGENTS } from '../rules/game';
 import { isAgent } from '../rules/words';
-
-export const updateGames = createAction('Update games');
-export const addOrReplaceGame = createAction('Add or replace game');
-export const updateWordInGame = createAction('Update roleRevealedForClueGiver for a word in a game');
 
 const reducer = createReducer({
 	[updateGames]: (state, games) => {
@@ -18,10 +11,16 @@ const reducer = createReducer({
 		return games;
 	},
 
-	[addOrReplaceGame]: (state, { gameId, words } = {}) => {
+	[addOrReplaceGame]: (state, {
+		gameId, words, agentsLeftTeamOne, agentsLeftTeamTwo,
+	} = {}) => {
 		if (!gameId) return state;
 
-		return { ...state, [gameId]: { gameId, words } };
+		const newState = { ...state, [gameId]: { gameId, words } };
+		if (agentsLeftTeamOne >= 0) newState[gameId].agentsLeftTeamOne = agentsLeftTeamOne;
+		if (agentsLeftTeamTwo >= 0) newState[gameId].agentsLeftTeamTwo = agentsLeftTeamTwo;
+
+		return newState;
 	},
 
 	[updateWordInGame]: (state, { gameId, word, roleRevealedForClueGiver }) => {
@@ -62,6 +61,19 @@ const reducer = createReducer({
 			},
 		};
 	},
+
+	[updateAgentsLeft]: (state, { gameId, agentsLeftTeamOne, agentsLeftTeamTwo } = {}) => {
+		if (!state[gameId]) return state;
+
+		return {
+			...state,
+			[gameId]: {
+				...state[gameId],
+				agentsLeftTeamOne,
+				agentsLeftTeamTwo,
+			},
+		};
+	},
 }, {});
 
 // Selectors
@@ -72,26 +84,28 @@ export const getActiveGameId = state => state && state.router && state.router.lo
 export const getAgentsLeftForGameId = (state, gameId) => gameId && state && state.game && state.game[gameId] && state.game[gameId].words &&
 	Object.values(state.game[gameId].words).reduce((count, word) => (isAgent(word) ? count - 1 : count), TOTAL_AGENTS);
 export const getAgentsLeftForGameIdAndTeamId = (state, gameId, teamId) => {
-	if (!(gameId && state && state.game && state.game[gameId] && state.game[gameId].words)) return AGENTS_PER_PLAYER;
-	const team = teamId === 1 ? 'playerOne' : 'playerTwo';
-	const otherTeam = teamId === 2 ? 'playerOne' : 'playerTwo';
-	return Object.values(state.game[gameId].words).reduce((count, word) => (
-		word.roleRevealedForClueGiver[team] === 'AGENT'
-		|| (word.roleRevealedForClueGiver[otherTeam] === 'AGENT' && word.role === 'AGENT') ? count - 1 : count), AGENTS_PER_PLAYER);
+	if (!(gameId && teamId && state && state.game && state.game[gameId] && state.game[gameId].words)) return AGENTS_PER_PLAYER;
+	return state.game[gameId][`${teamId === 1 ? 'agentsLeftTeamOne' : 'agentsLeftTeamTwo'}`];
 };
 
 // Thunks
-export function enterGame({ gameId, playerName }) {
+export function enterGame({ gameId }) {
 	return (dispatch, getState) => {
 		// replace the game with an dummy game (just an id)
 		// until we have a full game object from web socket
 		if (!getGameById(getState(), gameId)) dispatch(addOrReplaceGame({ gameId }));
-		const facebookId = getFacebookId(getState());
-		const teamId = getTeamId(getState(), gameId);
+		const state = getState();
+		const playerId = state && state.playerName && state.playerName.playerId;
+		const playerName = state && state.playerName && state.playerName.playerName;
+		const facebookId = state && state.playerName && state.playerName.facebookId;
+		const facebookImage = state && state.playerName && state.playerName.facebookImage;
+		const teamId = state && state.teamId && state.teamId[gameId] && state.teamId[gameId].teamId;
 		return fetchGame({
 			gameId,
+			playerId,
 			playerName,
 			facebookId,
+			facebookImage,
 			teamId,
 		});
 	};
@@ -101,7 +115,7 @@ export function makeGuess({ word }) {
 	return (dispatch, getState) => {
 		const state = getState();
 		const gameId = getActiveGameId(state);
-		const teamId = getTeamId(state, gameId);
+		const teamId = state && state.teamId && state.teamId[gameId] && state.teamId[gameId].teamId;
 		return guess({ gameId, word, teamId });
 	};
 }
@@ -109,7 +123,7 @@ export function makeGuess({ word }) {
 export function getGamesViaApi() {
 	return (dispatch, getState) => {
 		const state = getState();
-		const facebookId = getFacebookId(state);
+		const facebookId = state && state.playerName && state.playerName.facebookId;
 
 		if (!facebookId) {
 			return Promise.resolve(dispatch(updateGames({})));
@@ -126,6 +140,7 @@ export function getGamesViaApi() {
 					dispatch(updateTurnsLeft({ gameId, ...game }));
 					dispatch(updateClue({ gameId, ...game }));
 					dispatch(clearPlayers({ gameId, ...game }));
+					dispatch(updateAgentsLeft({ gameId, ...game }));
 				});
 			}
 		});

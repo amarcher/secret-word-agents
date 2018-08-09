@@ -3,14 +3,18 @@ import { get } from './utils/ajax';
 
 export function fetchGame({
 	gameId,
+	playerId,
 	playerName,
 	facebookId,
+	facebookImage,
 	teamId,
 } = {}) {
 	send({
 		type: 'words',
 		gameId,
-		payload: { playerName, facebookId, teamId },
+		payload: {
+			playerId, playerName, facebookId, facebookImage, teamId,
+		},
 	});
 }
 

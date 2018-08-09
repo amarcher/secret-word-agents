@@ -137,9 +137,9 @@ class RedisClient {
 		const playerIdFromToken = !facebookId && token && await this.getPlayerIdForToken(token);
 		const playerId = playerIdFromFB || playerIdFromToken || await this.client.incrAsync('playerIds');
 
-		const params = [`player:${playerId}`, 'name', name || ''];
-		if (facebookId) params.concat(['facebookId', facebookId, 'facebookUrl', facebookUrl || '']);
-		if (token) params.concat(['token', token]);
+		let params = [`player:${playerId}`, 'name', name || ''];
+		if (facebookId) params = [...params, 'facebookId', facebookId, 'facebookUrl', facebookUrl || ''];
+		if (token) params = [...params, 'token', token];
 
 		this.client.hmsetAsync(...params).then(() => {
 			if (facebookId && !playerIdFromFB) this.client.setAsync(`facebook:${facebookId}`, playerId);
@@ -199,6 +199,8 @@ class RedisClient {
 		} = await this.client.hgetallAsync(`game:${gameId}`);
 
 		const agentsLeftTeam = nonGuesserTeamId === 1 ? agentsLeftTeam1 : agentsLeftTeam2;
+		const agentsLeftOtherTeam = nonGuesserTeamId === 2 ? agentsLeftTeam2 : agentsLeftTeam1;
+		const guesserTeamName = guesserTeamId === 1 ? 'playerOne' : 'playerTwo';
 		const nonGuesserTeamName = nonGuesserTeamId === 1 ? 'playerOne' : 'playerTwo';
 
 		if (!wordData || !wordData[nonGuesserTeamName]) {
@@ -235,8 +237,7 @@ class RedisClient {
 
 		if (role === 'AGENT') {
 			if (teamGuessingChanged || parseInt(guessesLeft, 10) - 1 < 1) nextTurnsLeft -= 1;
-
-			this.client.hmsetAsync(
+			let args = [
 				`game:${gameId}`,
 				'agentsLeft',
 				parseInt(agentsLeft, 10) - 1,
@@ -244,7 +245,18 @@ class RedisClient {
 				parseInt(agentsLeftTeam, 10) - 1,
 				'turnsLeft',
 				nextTurnsLeft,
-			);
+			];
+
+			// If the role for the other team is an agent, decrement that count of remaining agents too
+			if (wordData[guesserTeamName] === 'AGENT') {
+				args = [
+					...args,
+					`agentsLeftTeam${guesserTeamId}`,
+					parseInt(agentsLeftOtherTeam, 10) - 1,
+				];
+			}
+
+			this.client.hmsetAsync(...args);
 
 			if (teamGuessingChanged || parseInt(guessesLeft, 10) - 1 < 1) {
 				this.setTurn(gameId);
@@ -282,6 +294,15 @@ class RedisClient {
 			guessesLeft: role === 'AGENT' ? parseInt(guessesLeft, 10) - 1 : 0,
 			playerGuessingChanged: teamGuessingChanged,
 			turnsLeft: nextTurnsLeft,
+		};
+	}
+
+	async getAgentsLeft(gameId) {
+		const { agentsLeft, agentsLeftTeam1, agentsLeftTeam2 } = await this.client.hgetallAsync(`game:${gameId}`) || {};
+		return {
+			agentsLeft: parseInt(agentsLeft, 10),
+			agentsLeftTeamOne: parseInt(agentsLeftTeam1, 10),
+			agentsLeftTeamTwo: parseInt(agentsLeftTeam2, 10),
 		};
 	}
 

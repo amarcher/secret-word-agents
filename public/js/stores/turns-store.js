@@ -1,16 +1,12 @@
-import { createAction, createReducer } from 'redux-act';
+import { createReducer } from 'redux-act';
 import { endTurn as submitEndTurn, giveClue as submitGiveClue } from '../fetchers';
+import { updateTurnsLeft, updateClue, updateGuessesLeft } from './actions';
 import { getTeamId } from './team-id-store';
-import { getActiveGameId } from './game-store';
+import { getActiveGameId, getGameById } from './game-store';
 import { AGENTS_PER_PLAYER } from '../rules/game';
-
-export const updateTurnsLeft = createAction('Update remaining turns left in the game');
-export const updateClue = createAction('Update the current clue and player giving clue');
-export const updateGuessesLeft = createAction('Update the current guesses left for the clue');
 
 const INITIAL_STATE = {
 	turnsLeft: AGENTS_PER_PLAYER,
-	wordsGuessedThisTurn: [],
 };
 
 export const reducer = createReducer({
@@ -75,7 +71,11 @@ export const getGuessesLeftForGameId = (state, gameId) => state && state.turns &
 export const isActiveGuesserForGameId = (state, gameId) => {
 	const playerGivingClue = getPlayerGivingClueForGameId(state, gameId);
 	const teamId = getTeamId(state, gameId);
-	return playerGivingClue && teamId && playerGivingClue.toLowerCase().indexOf(teamId) === -1;
+	const game = getGameById(state, gameId);
+	const hasGuessedWordThisTurn = teamId && Object.values(game.words).some(word => (
+		word.guessedThisTurn && word.roleRevealedForClueGiver[`${teamId === 1 ? 'playerOne' : 'playerTwo'}`] === 'AGENT'
+	));
+	return hasGuessedWordThisTurn || (playerGivingClue && teamId && playerGivingClue.toLowerCase().indexOf(teamId) === -1);
 };
 
 // Thunks

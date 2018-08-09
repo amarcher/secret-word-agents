@@ -4,11 +4,24 @@ import { composeWithDevTools } from 'redux-devtools-extension/logOnlyInProductio
 import thunkMiddleware from 'redux-thunk';
 import createHistory from 'history/createBrowserHistory';
 
-import gameReducer, { enterGame, getActiveGameId, addOrReplaceGame, updateWordInGame } from './game-store';
-import playersReducer, { incrementPlayerCount, decrementPlayerCount, clearPlayers } from './players-store';
-import turnsReducer, { updateTurnsLeft, updateClue, updateGuessesLeft } from './turns-store';
-import teamIdReducer, { setTeamId } from './team-id-store';
-import playerNameReducer, { getPlayerName } from './player-name-store';
+import {
+	addOrReplaceGame,
+	updateWordInGame,
+	updateTurnsLeft,
+	updateClue,
+	updateGuessesLeft,
+	updateAgentsLeft,
+	incrementPlayerCount,
+	decrementPlayerCount,
+	clearPlayers,
+	setTeamId,
+	setPlayerId,
+} from './actions';
+import gameReducer, { enterGame, getActiveGameId } from './game-store';
+import playersReducer from './players-store';
+import turnsReducer from './turns-store';
+import teamIdReducer from './team-id-store';
+import playerNameReducer from './player-name-store';
 import { sendNotification } from '../utils/notifications';
 import { addCallbacks as addWsCallbacks } from '../utils/ws';
 
@@ -40,11 +53,14 @@ export function onWsEvent(data) {
 		sendNotification('A guess has been made in your game!');
 
 		store.dispatch(updateWordInGame(payload));
+		store.dispatch(updateAgentsLeft(payload));
 		return store.dispatch(updateGuessesLeft(payload));
 	case 'playerLeft':
 		return store.dispatch(decrementPlayerCount(payload));
 	case 'playerJoined':
 		return store.dispatch(incrementPlayerCount(payload));
+	case 'playerChanged':
+		return store.dispatch(setPlayerId(payload));
 	case 'teamChanged':
 		return store.dispatch(setTeamId(payload));
 	case 'turns':
@@ -61,10 +77,11 @@ export function onWsEvent(data) {
 export function onWsConnected() {
 	const state = store.getState();
 	const gameId = getActiveGameId(state);
-	const playerName = getPlayerName(state);
+
+	if (!gameId) return;
 
 	store.dispatch(clearPlayers({ gameId }));
-	return store.dispatch(enterGame({ gameId, playerName }));
+	store.dispatch(enterGame({ gameId }));
 }
 
 addWsCallbacks({ onWsEvent, onWsConnected });
