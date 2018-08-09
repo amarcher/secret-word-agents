@@ -32,17 +32,26 @@ const reducer = createReducer({
 
 		const prevPlayerCount = state[gameId] || initialPlayersState;
 
-		const playerIndex = prevPlayerCount.connectedPlayerNames.findIndex(player => player.playerId === playerId);
+		const playerIndexTeamOne = prevPlayerCount.teamOne.findIndex(player => player.playerId === playerId);
+		const playerIndexTeamTwo = prevPlayerCount.teamTwo.findIndex(player => player.playerId === playerId);
+
+		const teamOne = playerIndexTeamOne === -1 ? prevPlayerCount.teamOne : [
+			...prevPlayerCount.teamOne.slice(0, playerIndexTeamOne),
+			...prevPlayerCount.teamOne.slice(playerIndexTeamOne + 1),
+		];
+
+		const teamTwo = playerIndexTeamTwo === -1 ? prevPlayerCount.teamTwo : [
+			...prevPlayerCount.teamOne.slice(0, playerIndexTeamTwo),
+			...prevPlayerCount.teamOne.slice(playerIndexTeamTwo + 1),
+		];
 
 		return {
 			...state,
 			[gameId]: {
 				...prevPlayerCount,
 				count,
-				connectedPlayerNames: [
-					...prevPlayerCount.connectedPlayerNames.slice(0, playerIndex),
-					...prevPlayerCount.connectedPlayerNames.slice(playerIndex + 1),
-				],
+				teamOne,
+				teamTwo,
 			},
 		};
 	},

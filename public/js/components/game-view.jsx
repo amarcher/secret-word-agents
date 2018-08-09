@@ -9,7 +9,7 @@ const propTypes = {
 		gameId: PropTypes.string,
 		words: PropTypes.object,
 	}).isRequired,
-	teamId: PropTypes.number,
+	teamId: PropTypes.string,
 };
 
 const defaultProps = {

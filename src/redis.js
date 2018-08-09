@@ -82,7 +82,7 @@ class RedisClient {
 	/**
 	 * Adds a player to a team and returns that teamId, assigns player to team with less players if no teamId is provided
 	 * @param {String}		gameId
-	 * @param {String}		playerId
+	 * @param {Number}		playerId
 	 * @param {[String]}	[token] - iOS notifications token
 	 * @param {[String]} 	[teamId] - teamId (if not provided an arbitrary team will be assigned)
 	 */
@@ -111,7 +111,7 @@ class RedisClient {
 	}
 
 	async getPlayersOnTeam(gameId, teamId) {
-		return this.client.smembersAsync(`game:${gameId}:team:${teamId}`);
+		return (this.client.smembersAsync(`game:${gameId}:team:${teamId}`) || []).map(playerId => parseInt(playerId, 10));
 	}
 
 	async getTokensOnTeam(gameId, teamId) {
@@ -123,11 +123,11 @@ class RedisClient {
 	}
 
 	async getPlayerIdForFacebookId(facebookId) {
-		return this.client.getAsync(`facebook:${facebookId}`);
+		return parseInt(this.client.getAsync(`facebook:${facebookId}`), 10);
 	}
 
 	async getPlayerIdForToken(token) {
-		return this.client.getAsync(`token:${token}`);
+		return parseInt(this.client.getAsync(`token:${token}`), 10);
 	}
 
 	async setPlayer(name, facebookId, facebookUrl, token) {
@@ -144,7 +144,7 @@ class RedisClient {
 			if (token && !playerIdFromToken) this.client.setAsync(`token:${token}`, playerId);
 		});
 
-		return playerId;
+		return parseInt(playerId, 10);
 	}
 
 	async getPlayer(playerId) {

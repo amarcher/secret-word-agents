@@ -38,12 +38,13 @@ export class BaseGameSummary extends Component {
 		if (!clue || !clue.word) return null;
 
 		return (
-			<span className="small"> {clue.word} - {clue.number}</span>
+			<span className="small-text"> {clue.word} - {clue.number}</span>
 		);
 	}
 
 	render() {
-		const { gameId, turnsLeft } = this.props;
+		const { gameId } = this.props;
+		const turnsLeft = Math.max(this.props.turnsLeft, 0);
 
 		const turnsLeftText = `${turnsLeft} TURN${turnsLeft !== 1 ? 'S' : ''} LEFT`;
 
@@ -55,7 +56,7 @@ export class BaseGameSummary extends Component {
 			>
 				<div>{gameId}</div>
 				<div className="game-summary-details">
-					<span className="small">{turnsLeftText}</span>
+					<span className="small-text">{turnsLeftText}</span>
 					{this.renderClue()}
 				</div>
 			</button>

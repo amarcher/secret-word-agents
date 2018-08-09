@@ -8,12 +8,12 @@ import { getConnectedPlayerNamesForGameId } from '../stores/players-store';
 const propTypes = {
 	teamOne: PropTypes.arrayOf(PropTypes.shape({
 		playerName: PropTypes.string,
-		playerId: PropTypes.string,
+		playerId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 		facebookImage: PropTypes.string,
 	})).isRequired,
 	teamTwo: PropTypes.arrayOf(PropTypes.shape({
 		playerName: PropTypes.string,
-		playerId: PropTypes.string,
+		playerId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
 		facebookImage: PropTypes.string,
 	})).isRequired,
 	agentsLeftTeamOne: PropTypes.number.isRequired,
@@ -22,12 +22,12 @@ const propTypes = {
 
 export class BasePlayerView extends Component {
 	renderPlayers(players, agentsLeft) {
-		const playersContent = players.map(({ playerId, playerName, facebookImage } = {}) => {
+		const playersContent = players.map(({ playerId, playerName, facebookImage } = {}, index) => {
 			const style = {};
 			if (facebookImage) style.background = `url('${facebookImage}')`;
 
 			return (
-				<div className="player" key={playerId} style={style}>
+				<div className="player" key={playerId || playerName || index} style={style}>
 					<span className="player-name">{playerName}</span>
 				</div>
 			);

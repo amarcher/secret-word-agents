@@ -22,7 +22,7 @@ const propTypes = {
 		gameId: PropTypes.string,
 		words: PropTypes.object,
 	}),
-	teamId: PropTypes.number,
+	teamId: PropTypes.string,
 };
 
 const defaultProps = {
