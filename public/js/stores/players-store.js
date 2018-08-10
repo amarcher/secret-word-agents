@@ -38,8 +38,8 @@ const reducer = createReducer({
 		];
 
 		const teamTwo = playerIndexTeamTwo === -1 ? prevPlayerCount.teamTwo : [
-			...prevPlayerCount.teamOne.slice(0, playerIndexTeamTwo),
-			...prevPlayerCount.teamOne.slice(playerIndexTeamTwo + 1),
+			...prevPlayerCount.teamTwo.slice(0, playerIndexTeamTwo),
+			...prevPlayerCount.teamTwo.slice(playerIndexTeamTwo + 1),
 		];
 
 		return {

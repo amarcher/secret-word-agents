@@ -297,9 +297,10 @@ async function handlePlayerChanged(ws, playerName, facebookId, facebookUrl, toke
 		ws.facebookImage = facebookUrl;
 		ws.token = token;
 
-		send(ws, ws.gameId, {
+		send(ws, {
 			type: 'playerChanged',
 			payload: {
+				gameId: ws.gameId,
 				playerName,
 				playerId,
 				facebookId,
