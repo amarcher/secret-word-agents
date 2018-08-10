@@ -199,7 +199,7 @@ class RedisClient {
 		} = await this.client.hgetallAsync(`game:${gameId}`);
 
 		const agentsLeftTeam = nonGuesserTeamId === 1 ? agentsLeftTeam1 : agentsLeftTeam2;
-		const agentsLeftOtherTeam = nonGuesserTeamId === 2 ? agentsLeftTeam2 : agentsLeftTeam1;
+		const agentsLeftOtherTeam = nonGuesserTeamId === 1 ? agentsLeftTeam2 : agentsLeftTeam1;
 		const guesserTeamName = guesserTeamId === 1 ? 'playerOne' : 'playerTwo';
 		const nonGuesserTeamName = nonGuesserTeamId === 1 ? 'playerOne' : 'playerTwo';
 
