@@ -1,9 +1,10 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 
 import { history } from '../stores';
 import { getClueForGameId, getTurnsLeftForGameId } from '../stores/turns-store';
+import { exitGame } from '../stores/game-store';
 
 const propTypes = {
 	gameId: PropTypes.string.isRequired,
@@ -12,6 +13,7 @@ const propTypes = {
 		number: PropTypes.number,
 	}),
 	turnsLeft: PropTypes.number,
+	exitGame: PropTypes.func.isRequired,
 };
 
 const defaultProps = {
@@ -24,12 +26,19 @@ export class BaseGameSummary extends Component {
 		super(props);
 
 		this.onPress = this.onPress.bind(this);
+		this.onConfirmLeave = this.onConfirmLeave.bind(this);
 	}
 
 	onPress() {
 		const { gameId } = this.props;
 
 		history.push(`/${gameId}`);
+	}
+
+	onConfirmLeave() {
+		const { gameId } = this.props;
+
+		this.props.exitGame({ gameId });
 	}
 
 	renderClue() {
@@ -49,23 +58,32 @@ export class BaseGameSummary extends Component {
 		const turnsLeftText = `${turnsLeft} TURN${turnsLeft !== 1 ? 'S' : ''} LEFT`;
 
 		return (
-			<button
-				className="game-summary"
-				type="button"
-				onClick={this.onPress}
-			>
-				<div>{gameId}</div>
-				<div className="game-summary-details">
-					<span className="small-text">{turnsLeftText}</span>
-					{this.renderClue()}
-				</div>
-			</button>
+			<div className="game-summary">
+				<button
+					className="game-summary-button"
+					type="button"
+					onClick={this.onPress}
+				>
+					<div>{gameId}</div>
+					<div className="game-summary-details">
+						<span className="small-text">{turnsLeftText}</span>
+						{this.renderClue()}
+					</div>
+				</button>
+				<button className="game-summary-leave-button" onClick={this.onConfirmLeave}>
+					x
+				</button>
+			</div>
 		);
 	}
 }
 
 BaseGameSummary.propTypes = propTypes;
 BaseGameSummary.defaultProps = defaultProps;
+
+const mapDispatchToProps = {
+	exitGame,
+};
 
 const mapStateToProps = (state, ownProps) => {
 	const { gameId } = ownProps;
@@ -79,4 +97,4 @@ const mapStateToProps = (state, ownProps) => {
 	};
 };
 
-export default connect(mapStateToProps)(BaseGameSummary);
+export default connect(mapStateToProps, mapDispatchToProps)(BaseGameSummary);

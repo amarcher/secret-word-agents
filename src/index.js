@@ -638,6 +638,72 @@ app.get('/exists', async (req, res) => {
 	return Promise.resolve(res.send({ exists, activePlayers }));
 });
 
+app.post('/leave', async (req, res) => {
+	const { gameId, facebookId, token } = req.body;
+	let { playerId } = req.body;
+
+	playerId = playerId || await db.getPlayerIdForFacebookId(facebookId) || await db.getPlayerIdForToken(token);
+	playerId = parseInt(playerId, 10);
+	const teamId = await db.getTeamIdForPlayerId(gameId, playerId);
+
+	if (!teamId) {
+		console.log(`Attempted to remove playerId ${playerId} from gameId ${gameId} but they were not on a team`);
+		return res.sendStatus(204);
+	}
+
+	return db.removePlayerFromTeam(gameId, playerId, teamId, token).then(() => {
+		console.log(`Removed playerId ${playerId} from gameId ${gameId}`);
+
+		// If we have any active sockets for this player, clear that player now
+		if (sockets[gameId] && sockets[gameId].size) {
+			sockets[gameId].forEach((client) => {
+				if (client.readyState === 1 && client.playerId === playerId) {
+					send(client, {
+						type: 'playerChanged',
+						payload: {
+							gameId,
+							playerName: client.playerName,
+							playerId: undefined,
+							facebookId: undefined,
+							facebookImage: undefined,
+							token: undefined,
+						},
+					});
+
+					send(client, {
+						type: 'teamChanged',
+						payload: {
+							gameId,
+							teamId: undefined,
+						},
+					});
+
+					sendWholeGameState(client);
+
+					handlePlayerLeft(client);
+
+					client.playerName = undefined;
+					client.token = undefined;
+					client.playerId = undefined;
+					client.teamId = undefined;
+					client.facebookId = undefined;
+					client.facebookImage = undefined;
+
+					broadcast(gameId, {
+						type: 'playerJoined',
+						payload: {
+							count: sockets[gameId].size,
+						},
+					});
+				}
+			});
+		}
+
+		res.sendStatus(204);
+	});
+});
+
+
 app.get('/.well-known/acme-challenge/xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU', (req, res) => {
 	res.send('xLHu4WPs9klKrGFJiPRKhEr68Fp1nGwwT57sMu5kSvU.wcyPaoYEfPqL-uVIHthYuQAf46zGDhI2Dt6L-aP4veQ');
 });
