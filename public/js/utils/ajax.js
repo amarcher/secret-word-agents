@@ -1,13 +1,16 @@
 import 'whatwg-fetch';
 
 function stringify(params) {
-	return Object.keys(params).map(key => `${key}=${params[key]}`).join('&');
+	return Object.keys(params).map(key => `${key}=${typeof params[key] === 'undefined' ? '' : params[key]}`).join('&');
 }
 
 function parseJSONorThrow(resp) {
-	if (resp.status !== 500) {
+	if (resp.status === 204) {
+		return null;
+	} else if (resp.status !== 500) {
 		return resp.json();
 	}
+
 	throw resp;
 }
 

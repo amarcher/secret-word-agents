@@ -1,5 +1,5 @@
 import { send } from './utils/ws';
-import { get } from './utils/ajax';
+import { get, post } from './utils/ajax';
 
 export function fetchGame({
 	gameId,
@@ -94,4 +94,8 @@ export function fetchGames({ facebookId } = {}) {
 
 export function checkIfGameExists({ gameId } = {}) {
 	return get('/exists', { gameId });
+}
+
+export function leaveGame({ gameId, playerId, facebookId } = {}) {
+	return post('/leave', { gameId, playerId, facebookId });
 }

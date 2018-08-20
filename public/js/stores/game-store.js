@@ -1,6 +1,6 @@
 import { createReducer } from 'redux-act';
-import { updateAgentsLeft, clearPlayers, updateGames, addOrReplaceGame, updateWordInGame, updateTurnsLeft, updateClue, setTeamId } from './actions';
-import { fetchGame, guess, startNewGame, fetchGames } from '../fetchers';
+import { updateAgentsLeft, clearPlayers, updateGames, addOrReplaceGame, updateWordInGame, updateTurnsLeft, updateClue, setTeamId, removeGame } from './actions';
+import { fetchGame, guess, startNewGame, fetchGames, leaveGame } from '../fetchers';
 import { AGENTS_PER_PLAYER, TOTAL_AGENTS } from '../rules/game';
 import { isAgent } from '../rules/words';
 
@@ -19,6 +19,14 @@ const reducer = createReducer({
 		const newState = { ...state, [gameId]: { gameId, words } };
 		if (agentsLeftTeamOne >= 0) newState[gameId].agentsLeftTeamOne = agentsLeftTeamOne;
 		if (agentsLeftTeamTwo >= 0) newState[gameId].agentsLeftTeamTwo = agentsLeftTeamTwo;
+
+		return newState;
+	},
+
+	[removeGame]: (state, { gameId } = {}) => {
+		if (!gameId) return state;
+
+		const { [gameId]: removedGame, ...newState } = state;
 
 		return newState;
 	},
@@ -108,6 +116,19 @@ export function enterGame({ gameId }) {
 			facebookImage,
 			teamId,
 		});
+	};
+}
+
+export function exitGame({ gameId }) {
+	return (dispatch, getState) => {
+		const state = getState();
+		const playerId = state && state.playerName && state.playerName.playerId;
+		const facebookId = state && state.playerName && state.playerName.facebookId;
+		return leaveGame({
+			gameId,
+			playerId,
+			facebookId,
+		}).then(() => dispatch(removeGame({ gameId })));
 	};
 }
 

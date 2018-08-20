@@ -4,6 +4,7 @@ import { createAction } from 'redux-act';
 
 export const updateGames = createAction('Update games');
 export const addOrReplaceGame = createAction('Add or replace game');
+export const removeGame = createAction('Remove game');
 export const updateWordInGame = createAction('Update roleRevealedForClueGiver for a word in a game');
 export const updateAgentsLeft = createAction('Update remaining agents for each team');
 

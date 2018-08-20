@@ -344,6 +344,11 @@
 }
 
 .game-summary {
+	position: relative;
+	overflow: visible;
+}
+
+.game-summary-button {
 	display: block;
 	margin-top: 2px;
 	text-align: left;
@@ -354,13 +359,31 @@
 	white-space: nowrap;
 }
 
-.game-summary:hover {
+.game-summary-button:hover {
 	background-color: #898989;
+}
+
+.game-summary-leave-button {
+	position: absolute;
+	top: 1px;
+	right: 1px;
+	font-size: 12px;
+	line-height: 24px;
+	border-radius: 50%;
+	width: 24px;
+	text-align: center;
+	padding: 0;
+	color: white;
+	background-color: transparent;
+}
+
+.game-summary-leave-button:hover {
+	background-color: red;
 }
 
 .game-summary-section {
 	text-align: left;
-	overflow-y: scroll;
+	overflow: visible;
 	margin-top: 24px;
 }
 

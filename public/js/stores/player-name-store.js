@@ -12,7 +12,7 @@ const reducer = createReducer({
 		facebookImage,
 	}),
 	[setPlayerId]: (state, { playerId } = {}) => {
-		if (playerId === state.playerId || typeof playerId !== 'number') return state;
+		if (playerId === state.playerId || typeof playerId === 'string') return state;
 
 		return {
 			...state,
