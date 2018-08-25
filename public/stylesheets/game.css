@@ -381,6 +381,11 @@
 	background-color: red;
 }
 
+.game-summary-leave-button:active {
+	position: absolute;
+	top: 2px;
+}
+
 .game-summary-section {
 	text-align: left;
 	overflow: visible;
