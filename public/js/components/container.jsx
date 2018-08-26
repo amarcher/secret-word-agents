@@ -13,6 +13,7 @@ import { enterGame, getGameById, getActiveGameId } from '../stores/game-store';
 import { getTeamId } from '../stores/team-id-store';
 import { getPlayerName } from '../stores/player-name-store';
 import { enableNotifications } from '../utils/notifications';
+import { close as closeWebSocket } from '../utils/ws';
 
 const propTypes = {
 	enterGame: PropTypes.func.isRequired,
@@ -37,6 +38,10 @@ export class BaseContainer extends Component {
 
 		enableNotifications();
 		document.title = gameId;
+	}
+
+	componentWillUnmount() {
+		closeWebSocket();
 	}
 
 	render() {
