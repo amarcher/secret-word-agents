@@ -18,7 +18,7 @@ export function send(data) {
 		ws.send(JSON.stringify(data));
 	} else {
 		// eslint-disable-next-line no-use-before-define
-		start();
+		start().then(() => send(data));
 	}
 }
 
@@ -91,6 +91,18 @@ export function start() {
 	});
 
 	return connectingPromise;
+}
+
+export function close() {
+	if (ws) {
+		ws.removeEventListener('message', onMessage);
+		ws.removeEventListener('close', onClose);
+		ws.removeEventListener('error', onError);
+
+		ws.close();
+	}
+
+	ws = undefined;
 }
 
 export function addCallbacks({ onWsEvent, onWsConnected }) {
