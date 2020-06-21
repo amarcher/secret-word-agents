@@ -45,7 +45,7 @@ export class BaseContainer extends Component {
 	}
 
 	render() {
-		const { game, teamId } = this.props;
+		const { game, gameId, teamId } = this.props;
 
 		if (!game.words) {
 			return null;
@@ -54,7 +54,7 @@ export class BaseContainer extends Component {
 		return (
 			<div className="container">
 				<div className="header">
-					<InfoView />
+					<InfoView gameId={gameId} />
 					<ClueView />
 					<PlayerSelect />
 				</div>

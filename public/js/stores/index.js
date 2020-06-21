@@ -27,7 +27,6 @@ import { addCallbacks as addWsCallbacks } from '../utils/ws';
 
 export const history = createHistory();
 const middleware = routerMiddleware(history);
-// eslint-disable-next-line no-underscore-dangle
 const composeEnhancers = composeWithDevTools({});
 
 export const store = createStore(

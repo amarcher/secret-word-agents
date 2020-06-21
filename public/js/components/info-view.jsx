@@ -43,16 +43,18 @@ export default class InfoView extends Component {
 	}
 
 	renderHowTo() {
+		const { gameId } = this.props;
+
 		return (
 			<div className="info-how-to-play">
-				<p>This is a two-player, cooperative, word-guessing game</p>
+				<p>This is a cooperative, word-guessing game</p>
 				<p>
-					Together, you and a teammate are trying to find all
+					Together, you and your teammate(s) are trying to find all
 					15 <span className="color-agent">good</span> words in 9 turns
 					without revealing any <span className="color-assasin">kill</span> words.
 				</p>
 				<p>
-					You will each see 9 <span className="color-agent">good</span> words that you need
+					Each player will each see 9 <span className="color-agent">good</span> words that you need
 					to get your teammate to reveal. Note that words you see
 					as <span className="color-agent">good</span>, your teammate may see
 					as <span className="color-agent">good</span>,&nbsp;
@@ -66,7 +68,7 @@ export default class InfoView extends Component {
 				</p>
 				<p>The teammate that received the clue reveals words one at a time until:</p>
 				<ol>
-					<li>They choose to end the turn.</li>
+					<li>They choose to end the turn by clicking the End Turn button.</li>
 					<li>
 						They have revealed as many <span className="color-agent">good</span> words as
 						the number provided with the clue.
@@ -79,10 +81,9 @@ export default class InfoView extends Component {
 				</ol>
 				<p>To start:</p>
 				<ol>
-					<li>1. Select which player you want to be (bottom left)</li>
-					<li>2. Tell your teammate to play as the other player</li>
-					<li>3. Take turns giving a <strong>one-word clue and a number</strong></li>
-					<li>4. After receiving a clue, click on words to reveal them</li>
+					<li>1. Tell your teammate to join the game using the game code: {gameId}</li>
+					<li>2. Take turns giving a <strong>one-word clue and a number</strong></li>
+					<li>3. After receiving a clue, click on words to reveal them</li>
 				</ol>
 			</div>
 		);
