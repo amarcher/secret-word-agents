@@ -1,16 +1,21 @@
 # See https://help.github.com/ignore-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules/
+/_legacy/node_modules
 
-# testing
-/coverage
-
-# production
-/build
-bundle.js
+# build artifacts
+**/dist/
+**/.tsbuildinfo
+coverage/
+_legacy/public/js/bundle.js
 
 # misc
 .DS_Store
 .env
+.env.local
 npm-debug.log*
+
+# editor
+.vscode/
+.idea/
