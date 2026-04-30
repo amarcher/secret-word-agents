@@ -6,7 +6,7 @@ node_modules/
 
 # build artifacts
 **/dist/
-**/.tsbuildinfo
+**/*.tsbuildinfo
 coverage/
 _legacy/public/js/bundle.js
 
