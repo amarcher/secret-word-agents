@@ -6,6 +6,7 @@ import {
   type RoomState,
   type TeamId,
 } from '@saw/shared';
+import type { PushHub } from '../push/PushHub.js';
 
 export interface GameRoomCallbacks {
   /** Emit an event to every socket in this room. */
@@ -19,6 +20,8 @@ interface PlayerSlot {
   codename: string;
   team: TeamId;
   connected: boolean;
+  /** Reconnect token — also doubles as the push subscription key. */
+  reconnectToken: string;
 }
 
 export class GameRoom {
@@ -27,29 +30,46 @@ export class GameRoom {
   private slots: Map<TeamId, PlayerSlot> = new Map();
   private callbacks: GameRoomCallbacks;
   private now: () => number;
+  private pushHub?: PushHub;
   lastActivity: number;
 
-  constructor(roomCode: string, callbacks: GameRoomCallbacks, now: () => number = Date.now) {
+  constructor(
+    roomCode: string,
+    callbacks: GameRoomCallbacks,
+    now: () => number = Date.now,
+    pushHub?: PushHub,
+  ) {
     this.roomCode = roomCode;
     this.callbacks = callbacks;
     this.now = now;
+    this.pushHub = pushHub;
     this.game = new Game();
     this.lastActivity = now();
   }
 
   /** Returns the assigned team, or null if both slots are full. */
-  addPlayer(id: string, codename: string): TeamId | null {
+  addPlayer(id: string, codename: string, reconnectToken = ''): TeamId | null {
     if (!this.slots.has(1)) {
-      this.slots.set(1, { id, codename, team: 1, connected: true });
+      this.slots.set(1, { id, codename, team: 1, connected: true, reconnectToken });
       this.touch();
       return 1;
     }
     if (!this.slots.has(2)) {
-      this.slots.set(2, { id, codename, team: 2, connected: true });
+      this.slots.set(2, { id, codename, team: 2, connected: true, reconnectToken });
       this.touch();
       return 2;
     }
     return null;
+  }
+
+  /** Update the reconnect token for an existing slot (used after reconnect rekey). */
+  setSlotToken(socketId: string, reconnectToken: string): void {
+    for (const slot of this.slots.values()) {
+      if (slot.id === socketId) {
+        slot.reconnectToken = reconnectToken;
+        return;
+      }
+    }
   }
 
   /** Move a player slot from old socket id → new socket id (reconnect). */
@@ -143,6 +163,30 @@ export class GameRoom {
       this.callbacks.broadcastToRoom('game:over', { result: outcome.result });
     }
     this.emitFullState();
+    void this.pushPartner(slot.team, {
+      type: 'guess',
+      title: `${slot.codename} guessed "${word}"`,
+      body:
+        outcome.role === 'AGENT'
+          ? '✓ Agent — keep going.'
+          : outcome.role === 'NON_AGENT'
+            ? 'Bystander. Turn ended.'
+            : 'Assassin. Mission failed.',
+      roomCode: this.roomCode,
+    });
+    if (outcome.result) {
+      void this.pushPartner(slot.team, {
+        type: 'over',
+        title:
+          outcome.result === 'win'
+            ? 'Mission accomplished'
+            : outcome.result === 'loss-assassin'
+              ? 'Operative down'
+              : 'Operation timed out',
+        body: 'Open the dossier to review the report.',
+        roomCode: this.roomCode,
+      });
+    }
     return outcome;
   }
 
@@ -153,7 +197,25 @@ export class GameRoom {
     this.touch();
     this.callbacks.broadcastToRoom('game:clue', { fromTeam: slot.team, word, count });
     this.emitFullState();
+    void this.pushPartner(slot.team, {
+      type: 'clue',
+      title: `${slot.codename} sent a clue`,
+      body: `“${word.toUpperCase()}” · ${count} ${count === 1 ? 'guess' : 'guesses'}`,
+      roomCode: this.roomCode,
+    });
     return true;
+  }
+
+  /** Send a push to the team OPPOSITE to `fromTeam`. No-ops if no sub. */
+  private async pushPartner(fromTeam: TeamId, payload: object): Promise<void> {
+    if (!this.pushHub) return;
+    const partnerTeam: TeamId = fromTeam === 1 ? 2 : 1;
+    const partner = this.slots.get(partnerTeam);
+    if (!partner || !partner.reconnectToken) return;
+    // Skip the push when the partner is online — they already see the in-app
+    // event over the socket. Pushes are purely for backgrounded tabs.
+    if (partner.connected) return;
+    await this.pushHub.send(partner.reconnectToken, payload);
   }
 
   applyEndTurn(playerId: string): void {

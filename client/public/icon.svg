@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Manila folder background with subtle paper grain -->
+  <rect width="512" height="512" fill="#e8dcc0"/>
+  <rect x="0" y="0" width="512" height="36" fill="#c9b78f"/>
+  <!-- Stencil S — Big Shoulders Stencil-ish glyph in stamp-blue ink -->
+  <g transform="translate(256 280)">
+    <path
+      d="M -90 -110
+         L 90 -110
+         L 90 -50
+         L -30 -50
+         L -30 -20
+         L 90 -20
+         L 90 110
+         L -90 110
+         L -90 50
+         L 30 50
+         L 30 20
+         L -90 20
+         Z"
+      fill="#1c1916"
+      stroke="#0f0d0a"
+      stroke-width="6"
+    />
+    <!-- Stencil cuts (the gaps that make stencil letters) -->
+    <rect x="-30" y="-90" width="60" height="14" fill="#e8dcc0"/>
+    <rect x="-30" y="76" width="60" height="14" fill="#e8dcc0"/>
+  </g>
+  <!-- Red CLASSIFIED stamp at the bottom -->
+  <g transform="translate(256 430) rotate(-4)">
+    <rect
+      x="-110" y="-22" width="220" height="44"
+      fill="none" stroke="#a8261c" stroke-width="6" rx="2"
+    />
+    <text
+      x="0" y="8" text-anchor="middle"
+      font-family="Impact, 'Big Shoulders Stencil', sans-serif"
+      font-weight="900" font-size="28"
+      letter-spacing="6"
+      fill="#a8261c"
+    >CLASSIFIED</text>
+  </g>
+</svg>

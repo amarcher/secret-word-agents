@@ -7,6 +7,7 @@ import {
   type TeamId,
 } from '@saw/shared';
 import { GameRoom } from './GameRoom.js';
+import type { PushHub } from '../push/PushHub.js';
 
 export interface SocketCallbacks {
   broadcastToRoom: (roomCode: string, event: string, payload: unknown) => void;
@@ -50,10 +51,15 @@ export class RoomManager {
   private callbacks: SocketCallbacks;
   private sweepInterval: ReturnType<typeof setInterval> | null = null;
   private now: () => number;
+  private pushHub?: PushHub;
 
-  constructor(callbacks: SocketCallbacks, options: { now?: () => number; autoSweep?: boolean } = {}) {
+  constructor(
+    callbacks: SocketCallbacks,
+    options: { now?: () => number; autoSweep?: boolean; pushHub?: PushHub } = {},
+  ) {
     this.callbacks = callbacks;
     this.now = options.now ?? Date.now;
+    this.pushHub = options.pushHub;
     if (options.autoSweep !== false) {
       this.sweepInterval = setInterval(() => this.sweep(), ROOM_SWEEP_INTERVAL);
     }
@@ -61,15 +67,15 @@ export class RoomManager {
 
   createRoom(socketId: string, codename: string): CreateResult {
     const roomCode = this.generateRoomCode();
-    const room = new GameRoom(roomCode, this.bindCallbacks(roomCode), this.now);
-    const team = room.addPlayer(socketId, codename);
+    const room = new GameRoom(roomCode, this.bindCallbacks(roomCode), this.now, this.pushHub);
+    const reconnectToken = this.issueToken(socketId);
+    const team = room.addPlayer(socketId, codename, reconnectToken);
     if (team === null) {
       // Unreachable — fresh room always has space.
       throw new Error('addPlayer returned null on a fresh room');
     }
     this.rooms.set(roomCode, room);
     this.socketToRoom.set(socketId, roomCode);
-    const reconnectToken = this.issueToken(socketId);
     return { ok: true, roomCode, team, reconnectToken };
   }
 
@@ -92,10 +98,10 @@ export class RoomManager {
       if (liveDuplicate) return { ok: false, error: 'Codename already in use' };
     }
 
-    const team = room.addPlayer(socketId, codename);
+    const reconnectToken = this.issueToken(socketId);
+    const team = room.addPlayer(socketId, codename, reconnectToken);
     if (team === null) return { ok: false, error: 'Room is full' };
     this.socketToRoom.set(socketId, code);
-    const reconnectToken = this.issueToken(socketId);
     return { ok: true, roomCode: code, team, reconnectToken };
   }
 
@@ -117,6 +123,7 @@ export class RoomManager {
     if (oldSocketId !== newSocketId) {
       const team = room.rekeyPlayer(oldSocketId, newSocketId);
       if (team === null) return { ok: false, error: 'Player slot not found' };
+      room.setSlotToken(newSocketId, reconnectToken);
       this.socketToRoom.delete(oldSocketId);
       this.socketToRoom.set(newSocketId, code);
       this.tokenToSocket.set(reconnectToken, newSocketId);

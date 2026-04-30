@@ -1,10 +1,20 @@
 import { describe, expect, it, vi } from 'vitest';
 import { GameRoom } from './GameRoom.js';
+import type { PushHub } from '../push/PushHub.js';
 
 function makeCallbacks() {
   return {
     broadcastToRoom: vi.fn(),
     emitToPlayer: vi.fn(),
+  };
+}
+
+function makePushHubStub(): { hub: PushHub; send: ReturnType<typeof vi.fn> } {
+  const send = vi.fn(async (_: string, _payload: object) => undefined);
+  // Cast to PushHub — only `send` is exercised by GameRoom.
+  return {
+    hub: { send } as unknown as PushHub,
+    send,
   };
 }
 
@@ -86,6 +96,62 @@ describe('GameRoom.applyGuess', () => {
     cb.broadcastToRoom.mockClear();
     expect(room.applyGuess('s2', 'NOT_ON_BOARD')).toBeNull();
     expect(cb.broadcastToRoom).not.toHaveBeenCalled();
+  });
+});
+
+describe('GameRoom push fan-out', () => {
+  it('pushes to the partner when partner is offline and a clue is given', async () => {
+    const cb = makeCallbacks();
+    const { hub, send } = makePushHubStub();
+    const room = new GameRoom('AAAA', cb, Date.now, hub);
+    room.addPlayer('s1', 'Alice', 'token-1');
+    room.addPlayer('s2', 'Bob', 'token-2');
+
+    // Partner offline → push should fire when Alice clues.
+    room.setPlayerConnected('s2', false);
+    room.applyClue('s1', 'OBSERVE', 1);
+
+    // Push is fire-and-forget; let the microtask queue drain.
+    await Promise.resolve();
+    expect(send).toHaveBeenCalledOnce();
+    const [token, payload] = send.mock.calls[0]!;
+    expect(token).toBe('token-2');
+    expect(payload).toMatchObject({ type: 'clue', roomCode: 'AAAA' });
+  });
+
+  it('does NOT push when the partner is connected (in-app handles it)', async () => {
+    const cb = makeCallbacks();
+    const { hub, send } = makePushHubStub();
+    const room = new GameRoom('AAAA', cb, Date.now, hub);
+    room.addPlayer('s1', 'Alice', 'token-1');
+    room.addPlayer('s2', 'Bob', 'token-2');
+
+    room.applyClue('s1', 'OBSERVE', 1);
+    await Promise.resolve();
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('pushes a guess outcome to the offline partner', async () => {
+    const cb = makeCallbacks();
+    const { hub, send } = makePushHubStub();
+    const room = new GameRoom('AAAA', cb, Date.now, hub);
+    room.addPlayer('s1', 'Alice', 'token-1');
+    room.addPlayer('s2', 'Bob', 'token-2');
+    // Alice clues, then Alice goes offline before Bob guesses.
+    room.applyClue('s1', 'OBSERVE', 1);
+    room.setPlayerConnected('s1', false);
+
+    const view = room.getViewForTeam(2);
+    const word = Object.keys(view.words)[0]!;
+    room.applyGuess('s2', word);
+
+    await Promise.resolve();
+    // Either 1 (single guess push) or 2 (guess + game-over) calls; first call
+    // must always be the guess to Alice's token.
+    expect(send.mock.calls.length).toBeGreaterThanOrEqual(1);
+    const [token, payload] = send.mock.calls[0]!;
+    expect(token).toBe('token-1');
+    expect(payload).toMatchObject({ type: 'guess', roomCode: 'AAAA' });
   });
 });
 

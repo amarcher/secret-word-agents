@@ -11,9 +11,10 @@ import type {
 } from '@saw/shared';
 import { RoomManager } from './socket/RoomManager.js';
 import { registerHandlers } from './socket/handlers.js';
+import { PushHub, loadVapidConfig } from './push/PushHub.js';
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '32kb' }));
 
 const httpServer = createServer(app);
 const isProd = process.env.NODE_ENV === 'production';
@@ -30,17 +31,50 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEve
   },
 );
 
-const manager = new RoomManager({
-  broadcastToRoom: (roomCode, event, payload) => {
-    io.to(roomCode).emit(event as keyof ServerToClientEvents, payload as never);
+const pushHub = new PushHub(loadVapidConfig());
+
+const manager = new RoomManager(
+  {
+    broadcastToRoom: (roomCode, event, payload) => {
+      io.to(roomCode).emit(event as keyof ServerToClientEvents, payload as never);
+    },
+    emitToPlayer: (playerId, event, payload) => {
+      io.to(playerId).emit(event as keyof ServerToClientEvents, payload as never);
+    },
   },
-  emitToPlayer: (playerId, event, payload) => {
-    io.to(playerId).emit(event as keyof ServerToClientEvents, payload as never);
-  },
-});
+  { pushHub },
+);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+app.get('/api/push/key', (_req, res) => {
+  res.json({ publicKey: pushHub.publicKey });
+});
+
+app.post('/api/push/subscribe', (req, res) => {
+  const { reconnectToken, subscription } = req.body ?? {};
+  if (typeof reconnectToken !== 'string' || !reconnectToken) {
+    return res.status(400).json({ error: 'reconnectToken required' });
+  }
+  if (
+    !subscription ||
+    typeof subscription !== 'object' ||
+    typeof subscription.endpoint !== 'string'
+  ) {
+    return res.status(400).json({ error: 'subscription required' });
+  }
+  pushHub.register(reconnectToken, subscription);
+  res.status(204).end();
+});
+
+app.post('/api/push/unsubscribe', (req, res) => {
+  const { reconnectToken } = req.body ?? {};
+  if (typeof reconnectToken === 'string' && reconnectToken) {
+    pushHub.unregister(reconnectToken);
+  }
+  res.status(204).end();
 });
 
 registerHandlers(io, manager);

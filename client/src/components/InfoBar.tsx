@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { PlayerView } from '@saw/shared';
 import CopyCode from './CopyCode.tsx';
+import NotifyToggle from './NotifyToggle.tsx';
 
 interface Props {
   view: PlayerView;
@@ -14,7 +15,10 @@ export default function InfoBar({ view, roomCode }: Props) {
 
   return (
     <div className="case-file rounded-sm px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between gap-2 text-[11px] sm:text-xs uppercase tracking-[0.18em] sm:tracking-[0.25em] text-ink-fade">
-      <CopyCode label="Code" code={roomCode} payload={shareUrl} />
+      <div className="flex items-center gap-3">
+        <CopyCode label="Code" code={roomCode} payload={shareUrl} />
+        <NotifyToggle />
+      </div>
       <div className="flex items-center gap-3 sm:gap-4">
         <Stat label="Turns" value={view.turnsLeft} accent={view.turnsLeft <= 2} />
         <Stat label="I" value={view.agentsLeftTeam1} />
