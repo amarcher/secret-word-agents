@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Board from '../components/Board.tsx';
 import ClueBar from '../components/ClueBar.tsx';
 import ClueComposer from '../components/ClueComposer.tsx';
+import CopyCode from '../components/CopyCode.tsx';
 import EndTurnButton from '../components/EndTurnButton.tsx';
 import GameOver from '../components/GameOver.tsx';
 import InfoBar from '../components/InfoBar.tsx';
@@ -102,8 +103,13 @@ export default function Room() {
 
       <main className="flex-1 px-3 py-4">
         {isWaitingForPartner && (
-          <div className="max-w-3xl mx-auto mb-4 case-file rounded-sm px-4 py-3 text-center text-ink-fade text-xs uppercase tracking-[0.3em]">
-            Awaiting second operative · share code <span className="font-stencil text-ink ml-1">{roomCode}</span>
+          <div className="max-w-3xl mx-auto mb-4 case-file rounded-sm px-4 py-3 flex items-center justify-center gap-3 text-ink-fade text-xs uppercase tracking-[0.3em]">
+            <span>Awaiting second operative · share</span>
+            <CopyCode
+              code={roomCode}
+              payload={`${window.location.origin}/room/${roomCode}`}
+              codeClassName="text-xl"
+            />
           </div>
         )}
 

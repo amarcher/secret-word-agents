@@ -1,4 +1,5 @@
 import type { PlayerView } from '@saw/shared';
+import CopyCode from './CopyCode.tsx';
 
 interface Props {
   view: PlayerView;
@@ -6,12 +7,13 @@ interface Props {
 }
 
 export default function InfoBar({ view, roomCode }: Props) {
+  const shareUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/room/${roomCode}`
+    : roomCode;
+
   return (
     <div className="case-file rounded-sm px-4 py-2 flex items-center justify-between gap-4 text-xs uppercase tracking-[0.25em] text-ink-fade">
-      <div>
-        <span className="text-[10px]">Op Code</span>{' '}
-        <span className="font-stencil text-lg tracking-[0.3em] text-ink ml-1">{roomCode}</span>
-      </div>
+      <CopyCode label="Op Code" code={roomCode} payload={shareUrl} />
       <div className="flex items-center gap-4">
         <Stat label="Turns" value={view.turnsLeft} accent={view.turnsLeft <= 2} />
         <Stat label="Op-I" value={view.agentsLeftTeam1} />
