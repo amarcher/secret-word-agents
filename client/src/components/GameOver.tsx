@@ -26,8 +26,8 @@ const subhead: Record<GameResult, string> = {
 
 export default function GameOver({ result, onNewGame, onLeave }: Props) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-paper-cream/90 paper-grain">
-      <div className="case-file rounded-sm px-8 py-10 max-w-md w-[90%] text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-paper-cream/90 paper-grain animate-fade-in-slow">
+      <div className="case-file rounded-sm px-8 py-10 max-w-md w-[90%] text-center animate-folder-slide">
         <div className="text-[10px] uppercase tracking-[0.4em] text-ink-fade mb-4">
           Mission Report
         </div>

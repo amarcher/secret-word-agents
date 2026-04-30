@@ -15,6 +15,32 @@
     background-color: #d9a93a;
     color: #1c1916;
   }
+
+  /* Default browser focus rings are blue/black — replace with a warm dossier
+     accent that reads against the cream background. Only show on keyboard
+     focus, not mouse clicks. */
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: 2px dashed theme(colors.stamp-red);
+    outline-offset: 2px;
+  }
+  button:focus-visible,
+  a:focus-visible,
+  [role='button']:focus-visible {
+    outline-style: solid;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer components {

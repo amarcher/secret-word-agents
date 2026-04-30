@@ -28,41 +28,45 @@ export default function ClueComposer({ onSubmit, disabled, agentsLeft }: Props) 
   };
 
   return (
-    <div className="case-file rounded-sm px-4 py-3">
-      <div className="text-[10px] uppercase tracking-[0.3em] text-ink-fade mb-2">
-        Briefing — Compose Transmission
+    <div className="case-file rounded-sm px-3 py-2 sm:px-4 sm:py-3">
+      <div className="text-[10px] uppercase tracking-[0.3em] text-ink-fade mb-1.5 sm:mb-2">
+        Compose Transmission
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <input
+          id="clue-word"
+          name="clue-word"
           type="text"
+          autoComplete="off"
           value={word}
           onChange={e => setWord(e.target.value)}
           placeholder="ONE-WORD CLUE"
           maxLength={24}
-          className="ink-underline flex-1 font-typewriter text-xl uppercase tracking-[0.1em] text-ink"
+          aria-label="Clue word"
+          className="ink-underline flex-1 min-w-0 font-typewriter text-base sm:text-xl uppercase tracking-[0.1em] text-ink"
           onKeyDown={e => {
             if (e.key === 'Enter') submit();
           }}
           disabled={disabled || pending}
         />
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 shrink-0">
           <button
             type="button"
             onClick={() => setCount(c => Math.max(0, c - 1))}
             disabled={disabled || pending}
-            className="font-stencil text-xl px-2 text-ink-fade hover:text-ink"
+            className="font-stencil text-xl px-1.5 sm:px-2 text-ink-fade hover:text-ink"
             aria-label="Decrement count"
           >
             −
           </button>
-          <span className="font-stencil text-2xl tracking-[0.1em] text-stamp-red w-6 text-center">
+          <span className="font-stencil text-xl sm:text-2xl tracking-[0.1em] text-stamp-red w-5 sm:w-6 text-center tabular-nums">
             {count}
           </span>
           <button
             type="button"
             onClick={() => setCount(c => Math.min(agentsLeft, c + 1))}
             disabled={disabled || pending}
-            className="font-stencil text-xl px-2 text-ink-fade hover:text-ink"
+            className="font-stencil text-xl px-1.5 sm:px-2 text-ink-fade hover:text-ink"
             aria-label="Increment count"
           >
             +
@@ -72,9 +76,9 @@ export default function ClueComposer({ onSubmit, disabled, agentsLeft }: Props) 
           type="button"
           onClick={submit}
           disabled={disabled || pending || !word.trim()}
-          className="font-stencil text-base tracking-[0.18em] uppercase text-ink hover:text-stamp-red disabled:opacity-40"
+          className="font-stencil text-sm sm:text-base tracking-[0.18em] uppercase text-ink hover:text-stamp-red disabled:opacity-40 shrink-0"
         >
-          Send &rarr;
+          Send&nbsp;&rarr;
         </button>
       </div>
       {error && <div className="mt-2 stamp-red text-xs tracking-widest">{error}</div>}

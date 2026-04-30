@@ -27,19 +27,37 @@ const config: Config = {
           '60%': { transform: 'scale(0.95) rotate(-4deg)', opacity: '1' },
           '100%': { transform: 'scale(1) rotate(-3deg)', opacity: '1' },
         },
-        typewriter: {
-          '0%': { width: '0' },
-          '100%': { width: '100%' },
+        typewriterIn: {
+          '0%': { clipPath: 'inset(0 100% 0 0)' },
+          '100%': { clipPath: 'inset(0 0 0 0)' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
         },
         folderSlide: {
           '0%': { transform: 'translateX(-12px)', opacity: '0' },
           '100%': { transform: 'translateX(0)', opacity: '1' },
         },
+        countPulse: {
+          '0%': { transform: 'scale(1)', color: 'inherit' },
+          '40%': { transform: 'scale(1.25)', color: '#a8261c' },
+          '100%': { transform: 'scale(1)', color: 'inherit' },
+        },
+        ellipsis: {
+          '0%, 20%': { content: '""' },
+          '40%': { content: '"."' },
+          '60%': { content: '".."' },
+          '80%, 100%': { content: '"..."' },
+        },
       },
       animation: {
-        'stamp-slam': 'stampSlam 180ms ease-out forwards',
-        typewriter: 'typewriter 1.2s steps(30, end) forwards',
-        'folder-slide': 'folderSlide 200ms ease-out',
+        'stamp-slam': 'stampSlam 220ms cubic-bezier(0.25, 0.85, 0.4, 1.2) forwards',
+        'typewriter-in': 'typewriterIn 0.8s steps(20, end) forwards',
+        'fade-in': 'fadeIn 280ms ease-out forwards',
+        'fade-in-slow': 'fadeIn 600ms ease-out forwards',
+        'folder-slide': 'folderSlide 220ms ease-out',
+        'count-pulse': 'countPulse 380ms ease-out',
       },
     },
   },

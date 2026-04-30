@@ -55,9 +55,11 @@ export default function Word({ word, view, canGuess, onClick }: Props) {
       onClick={isClickable ? onClick : undefined}
       disabled={!isClickable}
       className={[
-        'case-file relative w-full aspect-[5/3] rounded-[2px] px-2 py-3',
+        'case-file relative w-full min-w-0 aspect-[5/3] rounded-[2px] overflow-hidden',
+        'px-1 py-1.5 sm:px-2 sm:py-3',
         'flex items-center justify-center text-center',
         'transition-transform duration-150',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp-red focus-visible:ring-offset-1 focus-visible:ring-offset-paper-cream',
         isClickable ? 'cursor-pointer hover:-translate-y-0.5' : 'cursor-default',
         reveal ? 'opacity-95' : '',
       ].join(' ')}
@@ -66,7 +68,7 @@ export default function Word({ word, view, canGuess, onClick }: Props) {
     >
       {/* My role indicator — small corner marker (the dossier annotation). */}
       <span
-        className={`absolute top-1 left-1.5 text-[10px] font-mono ${marker.cls}`}
+        className={`absolute top-0.5 left-1 sm:top-1 sm:left-1.5 text-[9px] sm:text-[10px] font-mono leading-none ${marker.cls}`}
         aria-hidden
       >
         {marker.glyph}
@@ -74,9 +76,10 @@ export default function Word({ word, view, canGuess, onClick }: Props) {
 
       <span
         className={[
-          'font-typewriter text-ink uppercase select-none',
-          'text-sm sm:text-base md:text-[15px]',
-          'tracking-[0.05em]',
+          'font-typewriter text-ink uppercase select-none leading-tight',
+          'text-[10px] xs:text-[11px] sm:text-sm md:text-[15px]',
+          'tracking-[0.04em]',
+          'min-w-0 max-w-full truncate',
           reveal ? 'opacity-60' : '',
         ].join(' ')}
       >
@@ -85,22 +88,17 @@ export default function Word({ word, view, canGuess, onClick }: Props) {
 
       {/* Stamp overlay when revealed. */}
       {reveal && (
-        <span
-          className={[
-            'absolute inset-0 flex items-center justify-center pointer-events-none',
-            'animate-stamp-slam',
-          ].join(' ')}
-        >
+        <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <span
             className={[
-              'stamp text-[14px] sm:text-base px-2 py-0.5',
+              'stamp px-1.5 py-0.5 sm:px-2',
+              'text-[10px] sm:text-base',
               stampColor[reveal],
-              'border border-current/40',
+              'animate-stamp-slam',
             ].join(' ')}
             style={{
-              borderColor: 'currentColor',
+              border: '1px solid currentColor',
               borderRadius: 2,
-              transform: 'rotate(-3deg)',
             }}
           >
             {stampLabel[reveal]}

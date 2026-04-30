@@ -54,11 +54,17 @@ export default function Home() {
         </header>
 
         <section className="case-file rounded-sm p-6 mb-4">
-          <label className="block text-xs uppercase tracking-[0.25em] text-ink-fade mb-2">
+          <label
+            htmlFor="codename"
+            className="block text-xs uppercase tracking-[0.25em] text-ink-fade mb-2"
+          >
             Operative Codename
           </label>
           <input
+            id="codename"
+            name="codename"
             type="text"
+            autoComplete="username"
             value={codename}
             onChange={e => setCodename(e.target.value)}
             maxLength={MAX_NAME_LENGTH}
@@ -81,17 +87,24 @@ export default function Home() {
           <div className="text-center font-typewriter text-ink-fade text-xs uppercase tracking-[0.4em] my-2">— or —</div>
 
           <section className="case-file rounded-sm p-4">
-            <label className="block text-xs uppercase tracking-[0.25em] text-ink-fade mb-2">
+            <label
+              htmlFor="op-code"
+              className="block text-xs uppercase tracking-[0.25em] text-ink-fade mb-2"
+            >
               Operation Code
             </label>
             <div className="flex items-center gap-2">
               <input
+                id="op-code"
+                name="op-code"
                 type="text"
+                inputMode="text"
+                autoCapitalize="characters"
                 value={roomCode}
                 onChange={e => setRoomCode(e.target.value.toUpperCase().slice(0, ROOM_CODE_LENGTH))}
                 maxLength={ROOM_CODE_LENGTH}
                 placeholder="A1B2"
-                className="ink-underline flex-1 font-stencil text-3xl tracking-[0.4em] text-ink uppercase"
+                className="ink-underline flex-1 min-w-0 font-stencil text-3xl tracking-[0.4em] text-ink uppercase"
                 onKeyDown={e => {
                   if (e.key === 'Enter') submitJoin();
                 }}

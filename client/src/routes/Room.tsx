@@ -91,30 +91,30 @@ export default function Room() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-10 bg-paper-cream/95 backdrop-blur-sm border-b border-paper-edge px-3 py-2">
-        <div className="max-w-3xl mx-auto flex flex-col gap-2">
+      <header className="sticky top-0 z-10 bg-paper-cream/95 backdrop-blur-sm border-b border-paper-edge px-2 sm:px-3 py-1.5 sm:py-2">
+        <div className="max-w-3xl mx-auto flex flex-col gap-1.5 sm:gap-2">
           <InfoBar view={view} roomCode={roomCode} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-2">
             <TeamPanel players={room.players} myTeam={team} />
             <ClueBar view={view} myTeam={team} />
           </div>
         </div>
       </header>
 
-      <main className="flex-1 px-3 py-4">
+      <main className="flex-1 px-2 sm:px-3 py-3 sm:py-4">
         {isWaitingForPartner && (
-          <div className="max-w-3xl mx-auto mb-4 case-file rounded-sm px-4 py-3 flex items-center justify-center gap-3 text-ink-fade text-xs uppercase tracking-[0.3em]">
-            <span>Awaiting second operative · share</span>
+          <div className="max-w-3xl mx-auto mb-3 sm:mb-4 case-file rounded-sm px-3 py-2 sm:px-4 sm:py-3 flex items-center justify-center gap-2 sm:gap-3 text-ink-fade text-[10px] sm:text-xs uppercase tracking-[0.25em] sm:tracking-[0.3em]">
+            <span>Awaiting partner · share</span>
             <CopyCode
               code={roomCode}
               payload={`${window.location.origin}/room/${roomCode}`}
-              codeClassName="text-xl"
+              codeClassName="text-base sm:text-xl"
             />
           </div>
         )}
 
         {isPartnerOffline && !isWaitingForPartner && (
-          <div className="max-w-3xl mx-auto mb-4 case-file rounded-sm px-4 py-2 text-center text-stamp-red text-xs uppercase tracking-[0.3em]">
+          <div className="max-w-3xl mx-auto mb-3 sm:mb-4 case-file rounded-sm px-3 py-1.5 sm:px-4 sm:py-2 text-center text-stamp-red text-[10px] sm:text-xs uppercase tracking-[0.25em] sm:tracking-[0.3em]">
             Partner offline — awaiting reconnect
           </div>
         )}
@@ -122,7 +122,7 @@ export default function Room() {
         <Board view={view} canGuess={canGuess} onGuess={w => guess(w)} />
       </main>
 
-      <footer className="sticky bottom-0 bg-paper-cream/95 backdrop-blur-sm border-t border-paper-edge px-3 py-3">
+      <footer className="sticky bottom-0 bg-paper-cream/95 backdrop-blur-sm border-t border-paper-edge px-2 sm:px-3 py-2 sm:py-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
           {canClue ? (
             <div className="flex-1">
@@ -133,22 +133,21 @@ export default function Room() {
               />
             </div>
           ) : (
-            <div className="flex-1 case-file rounded-sm px-4 py-3 text-center text-ink-fade text-xs uppercase tracking-[0.3em]">
-              {canGuess ? 'Awaiting your guess on the board above.' : 'Partner is guessing…'}
+            <div className="flex-1 case-file rounded-sm px-3 py-2 sm:px-4 sm:py-3 text-center text-ink-fade text-[10px] sm:text-xs uppercase tracking-[0.25em] sm:tracking-[0.3em]">
+              {canGuess ? 'Awaiting your guess.' : 'Partner is guessing…'}
             </div>
           )}
 
-          {canGuess && (
-            <EndTurnButton onClick={endTurn} />
-          )}
-
-          <button
-            type="button"
-            onClick={handleLeave}
-            className="font-stencil text-sm tracking-[0.18em] uppercase text-ink-fade hover:text-stamp-red"
-          >
-            Leave
-          </button>
+          <div className="flex items-center justify-end gap-3 sm:gap-4">
+            {canGuess && <EndTurnButton onClick={endTurn} />}
+            <button
+              type="button"
+              onClick={handleLeave}
+              className="font-stencil text-xs sm:text-sm tracking-[0.18em] uppercase text-ink-fade hover:text-stamp-red"
+            >
+              Leave
+            </button>
+          </div>
         </div>
       </footer>
 
