@@ -1,50 +1,42 @@
-## Secret Agent Words
+# Secret Agent Words
 
-### Test URL
+Two-operative cooperative word-guessing game on the web. Each operative sees their own grid of 25 case files; their partner sees a different grid; together they take turns transmitting one-word clues and guessing each other's agents before they run out of turns or pick the wrong card.
 
-[See it live](https://secret-agent-words.herokuapp.com/)
+Modeled on Codenames Duet's mechanics with a fresh dossier-themed visual language and an original word list.
 
-### Running locally
+## Stack
 
-```bash
-brew install redis
-brew services start redis
+- TypeScript monorepo (npm workspaces): `shared/`, `server/`, `client/`.
+- Server: Express + Socket.IO 4 on `:3001`. In-memory `RoomManager` with reconnect tokens and a 5-min inactivity sweep. Web Push via `web-push`.
+- Client: React 19 + Vite + Tailwind. PWA-installable, web-push notifications when your partner sends a clue while your tab is closed.
+- No database. Game state lives per process.
+
+## Develop
+
+```
 npm install
-npm run build
-npm start
+npm run dev
 ```
 
-Then visit localhost:3000/
+`npm run dev` runs three workspaces concurrently — `shared` in `tsc --watch`, `server` via `tsx watch`, `client` via Vite. Open `http://localhost:5173` in two browser windows to play.
 
-### Redis Data Structure
+In dev, the server auto-generates ephemeral VAPID keys on boot. Push subscriptions reset every restart. Set `VAPID_PUBLIC` / `VAPID_PRIVATE` in env if you want stable dev subs.
+
+## Test
 
 ```
-game:{$gameId} --> Hash of game state
-	agentsLeft
-	agentsLeftTeam1
-	agentsLeftTeam2
-	turnsLeft
-
-game:{$gameId}:team:1 --> Set of IDs of players on team one
-game:{$gameId}:team:2 --> Set of IDs of players on team two
-game:{$gameId}:tokens:1 --> Set of tokens for players on team one
-game:{$gameId}:tokens:2 --> Set of tokens for players on team two
-game:{$gameId}:words --> Hash of words present in the game
-	[$word] --> {$role1},{$role2},{$revealed1},{$revealed2}
-game:{$gameId}:turn --> Hash of current turn data for the game
-	clueGiverTeamId
-	clueWord
-	clueNumber
-	guessesLeft
-
-facebook:{$facebookId} --> playerId to which this facebookId belongs
-token:{$token} --> playerId to which this token belongs
-
-playerIds --> integer of last used player id
-player:{$playerId} --> Hash of player info
-	name --> String name of player
-	facebookId --> String facebookId
-	facebookUrl --> String photo URL
-
-player:{$playerId}:games --> Set of gameIds for which this player is on a team
+npm test          # vitest run, all workspaces
+npm run typecheck # tsc --build across workspace refs
 ```
+
+50+ tests cover Game semantics (overlap, mid-turn forfeit, assassin, win), RoomManager (slot assignment, ghost eviction, reconnect rekey, inactivity sweep), GameRoom (broadcast fan-out, push-when-offline), and PushHub (send, 410 drop, transient retention).
+
+## Deploy
+
+See [DEPLOY.md](./DEPLOY.md) for the Fly.io single-port deployment and required production env vars.
+
+## Other docs
+
+- [CLAUDE.md](./CLAUDE.md) — codebase orientation for AI assistants.
+- [DESIGN.md](./DESIGN.md) — dossier visual direction (color, type, motion, lexicon).
+- `_legacy/` — 2018 Node 8 / Webpack 3 / Redis / Facebook-login codebase, preserved for reference. Not built or shipped.

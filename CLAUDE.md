@@ -4,86 +4,91 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Codenames Duet (cooperative variant) implemented as a real-time multiplayer web app. Two players share a 25-word board where each player sees a different role assignment (their own AGENTs, NON_AGENTs, and ASSASINs) and gives clues to help the other player guess their AGENTs. Game state is shared over WebSockets, persisted in Redis, and a companion iOS app receives APN push notifications.
+Two-operative cooperative word-guessing game (Codenames-Duet-mechanic). Originally written in 2018 on Node 8 / Webpack 3 / Express + raw `ws` / Redis / Facebook login / RN iOS companion (see `_legacy/`). Rewritten in 2026 as a Node 22 TypeScript monorepo modeled on `/Users/archer/Programs/contexto-multiplayer`. Web-only, in-memory state, dossier-themed PWA with web-push notifications.
 
-Live deployment: https://secret-agent-words.herokuapp.com/
+The dual-perspective game logic is the only piece worth preserving — it's the genuinely interesting part. Plumbing is fresh.
 
 ## Commands
 
-```bash
-# First-time setup (requires Redis running locally)
-brew install redis
-brew services start redis
-npm install            # also runs `webpack` via postinstall
-
-# Development
-npm run build          # one-shot client bundle to public/js/bundle.js
-npm run watch          # rebuild bundle on change
-npm start              # start the Express + WS server (defaults to PORT=3000)
-
-# Lint
-npm run lint           # eslint over public/js (airbnb config, tabs)
-npm run lint-fix
+```
+npm install
+npm run dev        # concurrent: shared (tsc --watch) + server (tsx watch) + client (vite)
+npm run build      # shared → server → client
+npm test           # vitest run, all workspaces
+npm run typecheck  # tsc --build (project references)
 ```
 
-There is no test suite (`npm test` exits 1).
+Single test file: `npx vitest run path/to/file.test.ts`.
 
-Pinned to **Node 8.9.4** (`engineStrict: true` in package.json). Newer Node versions will refuse to install.
+Single workspace build: `npm run build -w shared` / `-w server` / `-w client`.
 
-Required env vars: `REDIS_URL` (defaults to local Redis), `APN_CERT` (APNs auth key for iOS push), `PORT`.
+The dev server runs on `:3001` (server) and `:5173` (client, with proxy for `/socket.io` and `/api`). Open the client at `http://localhost:5173`.
+
+Production: `npm run build` then `NODE_ENV=production node server/dist/index.js`. The server serves the built client at `/`.
 
 ## Architecture
 
-### Client / server split
+### Workspaces
 
-- **Server** (`src/`): Express app that serves the EJS layout and the static `public/` bundle, plus a `ws` WebSocket server attached to the same HTTP server. Almost all real game traffic goes over the WebSocket; the few HTTP endpoints (`/games`, `/exists`, `/leave`) handle out-of-band lookups and cleanup. There is no per-game routing — the `gameId` lives in each WS message payload, not the URL path.
-- **Client** (`public/js/`): React + Redux SPA bundled by webpack 3 (Babel presets `es2015`, `react`, `stage-2`). Entry is `public/js/main.jsx`; output is `public/js/bundle.js` (gitignored — the `.eslintignore` skips it). Routes: `/` → enter-game form; `/:gameId` → game container.
+```
+shared/   @saw/shared   game logic + Socket.IO event types + constants
+server/   @saw/server   Express + Socket.IO + RoomManager + PushHub
+client/   @saw/client   React 19 + Vite + Tailwind + service worker
+```
 
-### Game model and the dual-perspective board
+Each has its own `tsconfig.json` extending `tsconfig.base.json` with project references. `shared` is `composite: true` so it builds independently and the others reference its emitted `dist/`.
 
-The core mechanic is in `src/game.js`:
-- 25 words are picked from `src/words.js`. Each square gets **two independent role assignments** — one for each player's perspective (`playerOne`, `playerTwo`) — drawn from `ASSASIN | AGENT | NON_AGENT`. A square that is an AGENT for player one may be a NON_AGENT or ASSASIN for player two.
-- Constants live at the top of `src/game.js`: 9 agents per player, 15 unique agents on the board (so 3 are shared/overlapping), 3 assassins per player, 9 turns total.
-- `roleRevealedForClueGiver` tracks, per word, what each player has had revealed to them — this is what's broadcast to clients, while the underlying role map is server-only.
-- A `Game` instance can be reconstructed from a serialized blob; the `RedisClient.setGame` / `getGame` pair handles the (de)serialization.
+ESM throughout. All workspaces are `"type": "module"`. Imports between workspaces use the package name (`@saw/shared`); inside a workspace, relative imports must include the `.js` extension (Node ESM rule), e.g. `import { Game } from './game/Game.js'`.
 
-When sending state to a client, the server only includes the role for that client's `teamId` (see `RedisClient.getWords`) so a player never sees the other player's role assignments.
+### The game model
 
-### Per-connection state on the WebSocket
+`shared/src/game/Game.ts` is the only piece carrying real domain logic. Every square holds **two role assignments**, one per team — what's an AGENT for team 1 may be a NON_AGENT or ASSASSIN for team 2. Reveals accumulate per grid: when team 2 guesses a word, the role from team 1's grid becomes `revealedOnTeam1`. Overlapping AGENTS (the 3 words that are AGENT on both grids) decrement both teams' counters in a single guess and reveal on both grids.
 
-`src/index.js` mutates the `ws` object directly to cache identity per-connection: `ws.gameId`, `ws.playerId`, `ws.teamId`, `ws.token` (APNs), `ws.facebookId`, `ws.facebookImage`, `ws.playerName`. The header comment in `src/index.js` documents this convention. There's also a top-level `sockets` map: `{ [gameId]: Set<ws> }` used for broadcast.
+Win = both `agentsLeftTeam1` and `agentsLeftTeam2` hit zero. Loss = ASSASSIN guessed (turnsLeft → 0) or turnsLeft exhausted from non-agent guesses + mid-turn clue forfeits.
 
-A 30-second ping/pong heartbeat (`THIRTY_SECONDS` interval) terminates dead connections — many browsers self-close otherwise.
+`Game.getViewForPlayer(team)` is the security boundary. **It must never include the partner's role assignments.** Test `Game.test.ts > 'only exposes the requesting team's role'` asserts this via `JSON.stringify` not containing the partner's value.
 
-### Request lifecycle
+### Room lifecycle (server)
 
-Each incoming WS message goes through two stages:
-1. `handleInitialRequest` — assigns `ws.gameId` if first message, lazily creates the `sockets[gameId]` Set, replays the existing players to the new client as `playerJoined` events, lazily creates the Game in Redis if needed, and detects "implicit player changes" (a non-`changePlayer` request whose payload carries a new `token`/`facebookId`/`playerName`).
-2. `handleRequest` — switches on `data.type`: `words`, `changePlayer`, `changeTeam`, `guess`, `giveClue`, `endTurn`, `startNewGame`.
+`server/src/socket/`:
+- **`GameRoom.ts`** — wraps one `Game` plus two `PlayerSlot`s. Owns curried broadcast/emit callbacks (the room code is bound at construction). `applyClue` / `applyGuess` / `applyEndTurn` / `newGame` mutate the game then fan out events plus per-player views. Each slot carries its `reconnectToken` so push fan-out can resolve.
+- **`RoomManager.ts`** — `Map<roomCode, GameRoom>` plus `socketToRoom` and `tokenToSocket` registries. Generates 4-char room codes (alphabet excludes I/O/0/1). On reconnect, rekeys the existing slot to the new socket id. Inactivity sweep runs every 60 s with a 5-min idle threshold (`ROOM_INACTIVITY_TIMEOUT` in `shared/src/constants.ts`). Tests inject a fake `now` to drive the sweep deterministically.
+- **`handlers.ts`** — single `registerHandlers(io, manager)` wires Socket.IO events to RoomManager calls. The `room:join` handler tries the reconnect token branch first, falls through to a fresh join on stale tokens.
 
-When a connection closes, `handlePlayerLeft` broadcasts the departure and (only for anonymous players with no Facebook id and no APN token) removes them from the team in Redis. Persistent identities stay attached to the team so they show up in `/games` later.
+### Push (server + service worker)
 
-`broadcast(gameId, data)` and `send(client, data)` always inject `gameId` into outgoing messages. The client's `onWsEvent` (in `public/js/stores/index.js`) dispatches Redux actions keyed by `payload.type`.
+`server/src/push/PushHub.ts` keeps a `Map<reconnectToken, PushSubscription>`. `GameRoom.applyClue` and `applyGuess` call `pushPartner(...)` which fires only when the partner slot is `connected: false` — connected partners already see the in-app socket event. Dead subscriptions (404/410) are dropped automatically.
 
-### Redis schema
+`client/public/sw.js` handles `push` (renders Notification with `tag: saw-<roomCode>` for renotify) and `notificationclick` (focuses an existing tab on `/room/<code>` or opens one).
 
-Documented in `README.md`. Authoritative client is `src/redis.js`, which uses `bluebird.promisifyAll(redis)` to get `*Async` versions of every node-redis method. Notable patterns:
-- Word data is stored as a comma-joined string `"playerOneRole,playerTwoRole,revealedToPlayerOne,revealedToPlayerTwo"` in a single hash field per word, not as nested structures. Round-trip helpers: `setWordMap` / `getWordMap` / `getWordData` / `setWordData`.
-- Two identity indexes are maintained alongside `player:{id}`: `facebook:{facebookId} -> playerId` and `token:{token} -> playerId`. `setPlayer` reuses an existing playerId if either index resolves; otherwise it `INCR`s `playerIds`.
-- Per-team tokens are stored separately (`game:{id}:tokens:{teamId}`) so the server can push iOS notifications only to the *other* team when a clue/guess happens.
+VAPID keys: `loadVapidConfig()` reads `VAPID_PUBLIC` / `VAPID_PRIVATE` / `VAPID_SUBJECT` from env; auto-generates ephemerals in dev with a loud warning; **hard-fails** in production.
 
-### Client state
+### Client
 
-Redux store composed in `public/js/stores/index.js` from per-slice reducers (`game-store`, `players-store`, `turns-store`, `team-id-store`, `player-name-store`) plus `react-router-redux`. WS plumbing lives in `public/js/utils/ws.js` and reconnects on close with a 5s backoff; `addCallbacks({ onWsEvent, onWsConnected })` wires it to the store.
+React Router v7 with two routes: `Home` (`/`) and `Room` (`/room/:roomCode`). `client/src/lib/socket.ts` exports a singleton typed `Socket<ServerToClientEvents, ClientToServerEvents>` plus a `useGame()` hook that owns the connection, persists `reconnectToken` / `roomCode` / `codename` in localStorage, and exposes action emitters.
 
-Components in `public/js/components/` are mostly thin views (`game-view`, `clue-view`, `turn-view`, `player-view`, `word`, etc.) connected to the store. `container.jsx` is the per-game shell mounted at `/:gameId`; on unmount it calls `closeWebSocket()` so leaving the route tears down the WS.
+On hard reload of `/room/XXXX`, `Room.tsx`'s effect calls `reconnectIfStored(roomCode)`. If the token is missing, stale, or the room was swept, it navigates back to `/`.
 
-### iOS push notifications
+### Visual language
 
-`src/push-notifications.js` wraps `node-pushnotifications` with hardcoded APNs `keyId`, `teamId`, and `topic` (`org.reactjs.native.example.Dooler`). The auth key itself comes from `process.env.APN_CERT`. The companion native iOS app is the consumer.
+Dossier theme. See `DESIGN.md` for the full token list. Tailwind config lives in `client/tailwind.config.ts`. Highlights:
+- Color tokens: `paper-cream`, `paper-aged`, `paper-edge`, `ink`, `ink-fade`, `stamp-red`, `stamp-blue`, `stamp-green`, `caution`. **Never use raw hex** — always reference tokens.
+- Type stack: Big Shoulders Stencil for stamps/headers; Special Elite (typewriter) for body and word cards; Courier Prime for UI controls.
+- Animations: `stamp-slam` on word reveals, `typewriter-in` on new clues (clip-path), `count-pulse` on agents-left changes, `folder-slide` on overlays. All gated by `prefers-reduced-motion`.
+
+User-facing copy uses the lexicon (operative / codename / op code / briefing / intercept / case file / mission / dossier). Never write "Codenames" in any public-facing string — gameplay mechanic is fine, brand isn't.
 
 ## Conventions
 
-- **Tabs, airbnb ESLint config.** The repo enforces tabs (`indent: ["error", "tab"]`, `react/jsx-indent`, `react/jsx-indent-props`) and a 150-char line limit. Run `npm run lint-fix` before committing JS/JSX changes.
-- **Server is CommonJS, client is ES modules + JSX.** Don't mix — `src/` uses `require`/`module.exports`; `public/js/` uses `import`/`export`.
-- The `bundle.js` artifact lives in `public/js/` and is gitignored / eslint-ignored. Webpack builds run via `npm run build`, `watch`, or the `postinstall` hook.
+- **Tabs vs spaces**: 2-space indent throughout the new code (TS / JSX). The `_legacy/` codebase uses tabs; ignore its style.
+- **Imports**: relative imports inside a workspace include `.js`; cross-workspace use the package name.
+- **Don't reach into `_legacy/`** for live code paths. It's reference only — the new build does not consume it. Verify any "this used to work" claims by reading the new files first.
+- **Tests live next to their source**: `Foo.ts` + `Foo.test.ts`. Vitest workspace config in `vitest.workspace.ts`.
+- **Player identity is ephemeral**. There is no auth, no user accounts, no DB. Reconnect tokens persist across page reloads via localStorage but die with the server process. Don't add an account system unless explicitly asked.
+
+## Don't
+
+- Don't reintroduce Redis, Facebook login, or APN tokens. Those are intentionally gone.
+- Don't touch `_legacy/` or `dooler_native` (sibling RN app). Both are dormant.
+- Don't use "Codenames" in user-visible strings, marketing copy, or asset names. Internal docs (this file, plan files, commit messages) may reference the lineage.
+- Don't add `applicationServerKey: Uint8Array` directly — the strict-TS subtype is `Uint8Array<ArrayBufferLike>` which isn't `BufferSource`-compatible. Build a fresh `ArrayBuffer` and wrap with `Uint8Array` (see `client/src/lib/push.ts:urlBase64ToUint8Array`).
