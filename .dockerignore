@@ -1,0 +1,30 @@
+**/node_modules
+**/dist
+**/.tsbuildinfo
+
+# git + editor noise
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+# legacy 2018 codebase — kept in tree for reference, not for the runtime image
+_legacy
+
+# local secrets / scratch
+.env
+.env.*
+*.log
+npm-debug.log*
+
+# screenshots and dev artifacts
+/tmp
+*.png
+
+# CI / docs not needed in the image
+.github
+DEPLOY.md
+DESIGN.md
+README.md
+CLAUDE.md

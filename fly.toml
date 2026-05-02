@@ -1,0 +1,32 @@
+# Fly.io app config for Secret Agent Words.
+#
+# Replace `app` with the name you registered via `fly apps create <name>`.
+# See DEPLOY.md for the full first-run checklist.
+
+app = 'secret-agent-words'
+primary_region = 'ewr'
+
+[build]
+
+[env]
+  NODE_ENV = 'production'
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '10s'
+    method = 'GET'
+    path = '/api/health'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '512mb'
+  cpus = 1
+  memory_mb = 512
